@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 """
 AM Talks 数据治理经验分享 HTML生成器 V2
-标题: 数据治理规范体系
-作者: 刘荣新
 """
 
 import os
+
+AUTHOR = "刘荣新"
+DATE = "2026年6月"
+SERIES = "AM TALKS - 007"
+TITLE = "数据治理规范体系"
+VERSION = "V2.0"
+TOTAL_SLIDES = 18
 
 OUTPUT_DIR = r"D:\Users\11033406\【03】Workspace\【06】数据管理\设计方案\数据治理文档整理分析_20260617\AM_Talks_调研报告"
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "am_talks_data_governance_v2.html")
@@ -897,24 +902,40 @@ document.getElementById('prevBtn').addEventListener('click', prevSlide);
 showSlide(0);
 """
 
+def make_placeholder_slide(num, total=TOTAL_SLIDES):
+    return f"""
+    <div class="slide-header">
+        <div class="slide-number">{num:02d} / {total}</div>
+        <h2 class="slide-title">待补充内容</h2>
+    </div>
+    <div class="slide-content">
+        <div class="data-grid">
+            <div class="data-card">
+                <div class="value">-</div>
+                <div class="label">待补充</div>
+            </div>
+        </div>
+    </div>
+    """
+
 SLIDES_V2 = [
     # Slide 1: 封面
-    """
+    f"""
     <div class="cover-slide">
-        <div class="series-tag">AM TALKS - 007</div>
+        <div class="series-tag">{SERIES}</div>
         <h1 class="main-title">
-            数据治理规范体系<br>
-            <span class="highlight">V2.0</span>
+            {TITLE}<br>
+            <span class="highlight">{VERSION}</span>
         </h1>
-        <p class="author">刘荣新</p>
-        <p class="date">2026年6月</p>
+        <p class="author">{AUTHOR}</p>
+        <p class="date">{DATE}</p>
     </div>
     """,
     
     # Slide 2: 目录
-    """
+    f"""
     <div class="slide-header">
-        <div class="slide-number">02 / 18</div>
+        <div class="slide-number">02 / {TOTAL_SLIDES}</div>
         <h2 class="slide-title">目录</h2>
     </div>
     <div class="slide-content">
@@ -942,227 +963,15 @@ SLIDES_V2 = [
         </div>
     </div>
     """,
-    
-    # Slide 3-18: 占位符
-    """
-    <div class="slide-header">
-        <div class="slide-number">03 / 18</div>
-        <h2 class="slide-title">待补充内容</h2>
-    </div>
-    <div class="slide-content">
-        <div class="data-grid">
-            <div class="data-card">
-                <div class="value">-</div>
-                <div class="label">待补充</div>
-            </div>
-        </div>
-    </div>
-    """,
-    """
-    <div class="slide-header">
-        <div class="slide-number">04 / 18</div>
-        <h2 class="slide-title">待补充内容</h2>
-    </div>
-    <div class="slide-content">
-        <div class="data-grid">
-            <div class="data-card">
-                <div class="value">-</div>
-                <div class="label">待补充</div>
-            </div>
-        </div>
-    </div>
-    """,
-    """
-    <div class="slide-header">
-        <div class="slide-number">05 / 18</div>
-        <h2 class="slide-title">待补充内容</h2>
-    </div>
-    <div class="slide-content">
-        <div class="data-grid">
-            <div class="data-card">
-                <div class="value">-</div>
-                <div class="label">待补充</div>
-            </div>
-        </div>
-    </div>
-    """,
-    """
-    <div class="slide-header">
-        <div class="slide-number">06 / 18</div>
-        <h2 class="slide-title">待补充内容</h2>
-    </div>
-    <div class="slide-content">
-        <div class="data-grid">
-            <div class="data-card">
-                <div class="value">-</div>
-                <div class="label">待补充</div>
-            </div>
-        </div>
-    </div>
-    """,
-    """
-    <div class="slide-header">
-        <div class="slide-number">07 / 18</div>
-        <h2 class="slide-title">待补充内容</h2>
-    </div>
-    <div class="slide-content">
-        <div class="data-grid">
-            <div class="data-card">
-                <div class="value">-</div>
-                <div class="label">待补充</div>
-            </div>
-        </div>
-    </div>
-    """,
-    """
-    <div class="slide-header">
-        <div class="slide-number">08 / 18</div>
-        <h2 class="slide-title">待补充内容</h2>
-    </div>
-    <div class="slide-content">
-        <div class="data-grid">
-            <div class="data-card">
-                <div class="value">-</div>
-                <div class="label">待补充</div>
-            </div>
-        </div>
-    </div>
-    """,
-    """
-    <div class="slide-header">
-        <div class="slide-number">09 / 18</div>
-        <h2 class="slide-title">待补充内容</h2>
-    </div>
-    <div class="slide-content">
-        <div class="data-grid">
-            <div class="data-card">
-                <div class="value">-</div>
-                <div class="label">待补充</div>
-            </div>
-        </div>
-    </div>
-    """,
-    """
-    <div class="slide-header">
-        <div class="slide-number">10 / 18</div>
-        <h2 class="slide-title">待补充内容</h2>
-    </div>
-    <div class="slide-content">
-        <div class="data-grid">
-            <div class="data-card">
-                <div class="value">-</div>
-                <div class="label">待补充</div>
-            </div>
-        </div>
-    </div>
-    """,
-    """
-    <div class="slide-header">
-        <div class="slide-number">11 / 18</div>
-        <h2 class="slide-title">待补充内容</h2>
-    </div>
-    <div class="slide-content">
-        <div class="data-grid">
-            <div class="data-card">
-                <div class="value">-</div>
-                <div class="label">待补充</div>
-            </div>
-        </div>
-    </div>
-    """,
-    """
-    <div class="slide-header">
-        <div class="slide-number">12 / 18</div>
-        <h2 class="slide-title">待补充内容</h2>
-    </div>
-    <div class="slide-content">
-        <div class="data-grid">
-            <div class="data-card">
-                <div class="value">-</div>
-                <div class="label">待补充</div>
-            </div>
-        </div>
-    </div>
-    """,
-    """
-    <div class="slide-header">
-        <div class="slide-number">13 / 18</div>
-        <h2 class="slide-title">待补充内容</h2>
-    </div>
-    <div class="slide-content">
-        <div class="data-grid">
-            <div class="data-card">
-                <div class="value">-</div>
-                <div class="label">待补充</div>
-            </div>
-        </div>
-    </div>
-    """,
-    """
-    <div class="slide-header">
-        <div class="slide-number">14 / 18</div>
-        <h2 class="slide-title">待补充内容</h2>
-    </div>
-    <div class="slide-content">
-        <div class="data-grid">
-            <div class="data-card">
-                <div class="value">-</div>
-                <div class="label">待补充</div>
-            </div>
-        </div>
-    </div>
-    """,
-    """
-    <div class="slide-header">
-        <div class="slide-number">15 / 18</div>
-        <h2 class="slide-title">待补充内容</h2>
-    </div>
-    <div class="slide-content">
-        <div class="data-grid">
-            <div class="data-card">
-                <div class="value">-</div>
-                <div class="label">待补充</div>
-            </div>
-        </div>
-    </div>
-    """,
-    """
-    <div class="slide-header">
-        <div class="slide-number">16 / 18</div>
-        <h2 class="slide-title">待补充内容</h2>
-    </div>
-    <div class="slide-content">
-        <div class="data-grid">
-            <div class="data-card">
-                <div class="value">-</div>
-                <div class="label">待补充</div>
-            </div>
-        </div>
-    </div>
-    """,
-    """
-    <div class="slide-header">
-        <div class="slide-number">17 / 18</div>
-        <h2 class="slide-title">待补充内容</h2>
-    </div>
-    <div class="slide-content">
-        <div class="data-grid">
-            <div class="data-card">
-                <div class="value">-</div>
-                <div class="label">待补充</div>
-            </div>
-        </div>
-    </div>
-    """,
-    
+] + [make_placeholder_slide(i) for i in range(3, TOTAL_SLIDES)] + [
     # Slide 18: 结尾
-    """
+    f"""
     <div class="end-slide">
         <div class="thanks">感谢聆听</div>
         <div class="qa">Q & A</div>
         <div class="contact">
-            <p>AM Talks - 007</p>
-            <p>刘荣新 | 2026年6月</p>
+            <p>{SERIES}</p>
+            <p>{AUTHOR} | {DATE}</p>
         </div>
     </div>
     """,
@@ -1173,8 +982,8 @@ def generate_html():
     for i, slide_content in enumerate(SLIDES_V2):
         slides_html += f'        <div class="slide">{slide_content}\n'
         slides_html += '            <div class="slide-footer">\n'
-        slides_html += f'                <span>AM Talks - 007 | 刘荣新</span>\n'
-        slides_html += f'                <span>数据治理规范体系 V2.0</span>\n'
+        slides_html += f'                <span>{SERIES} | {AUTHOR}</span>\n'
+        slides_html += f'                <span>{TITLE} {VERSION}</span>\n'
         slides_html += '            </div>\n'
         slides_html += '        </div>\n'
     
@@ -1183,7 +992,7 @@ def generate_html():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AM Talks - 007 | 刘荣新 | 数据治理规范体系 V2.0</title>
+    <title>{SERIES} | {AUTHOR} | {TITLE} {VERSION}</title>
     <style>
 {CSS}
     </style>
@@ -1217,12 +1026,15 @@ def main():
     
     html_content = generate_html()
     
-    with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-    
-    print(f"✅ HTML文件已生成: {OUTPUT_FILE}")
-    print(f"📄 共 {len(SLIDES_V2)} 张幻灯片")
-    print(f"📦 文件大小: {len(html_content)} 字节")
+    try:
+        with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        print(f"✅ HTML文件已生成: {OUTPUT_FILE}")
+        print(f"📄 共 {len(SLIDES_V2)} 张幻灯片")
+        print(f"📦 文件大小: {len(html_content)} 字节")
+    except IOError as e:
+        print(f"❌ 文件写入失败: {e}")
+        raise
 
 if __name__ == "__main__":
     main()
