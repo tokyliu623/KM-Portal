@@ -7,7 +7,7 @@ import os
 
 AUTHOR = "刘荣新"
 DATE = "2026年6月"
-SERIES = "AM TALKS - 007"
+SERIES = "AM TALKS - 006"
 TITLE = "数据治理规范体系"
 VERSION = "V2.0"
 TOTAL_SLIDES = 18
@@ -813,6 +813,123 @@ body {
     color: var(--accent);
 }
 
+.pain-point-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.pain-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: rgba(255,255,255,0.03);
+    padding: 18px 25px;
+    border-radius: 12px;
+    border-left: 4px solid var(--danger);
+    transition: all 0.3s ease;
+}
+
+.pain-item:hover {
+    background: rgba(255,255,255,0.06);
+    transform: translateX(5px);
+}
+
+.pain-number {
+    width: 36px;
+    height: 36px;
+    background: rgba(252, 129, 129, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: var(--danger);
+    flex-shrink: 0;
+}
+
+.pain-text {
+    font-size: 18px;
+    color: var(--text-light);
+}
+
+.comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 80px 1fr;
+    gap: 20px;
+    align-items: center;
+    margin: 30px 0;
+}
+
+.cognition-box {
+    background: rgba(255,255,255,0.05);
+    border-radius: 16px;
+    padding: 30px;
+    text-align: center;
+}
+
+.cognition-box.traditional {
+    border: 2px solid var(--danger);
+}
+
+.cognition-box.correct {
+    border: 2px solid var(--success);
+}
+
+.cognition-label {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.cognition-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.cognition-box.traditional .cognition-title {
+    color: var(--danger);
+}
+
+.cognition-box.correct .cognition-title {
+    color: var(--success);
+}
+
+.cognition-desc {
+    font-size: 16px;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.cognition-arrow {
+    font-size: 40px;
+    color: var(--accent);
+}
+
+.golden-quote {
+    background: linear-gradient(135deg, rgba(56, 178, 172, 0.2), rgba(79, 209, 197, 0.1));
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    padding: 30px 40px;
+    text-align: center;
+    margin-top: 30px;
+}
+
+.golden-quote .quote-text {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--accent-light);
+    margin-bottom: 10px;
+}
+
+.golden-quote .quote-desc {
+    font-size: 16px;
+    color: var(--text-muted);
+}
+
 @media (max-width: 1200px) {
     .slide {
         padding: 40px 50px;
@@ -964,7 +1081,85 @@ SLIDES_V2 = [
         </div>
     </div>
     """,
-] + [make_placeholder_slide(i) for i in range(3, TOTAL_SLIDES)] + [
+    
+    # Slide 3: 痛点开场
+    """
+    <div class="slide-header">
+        <div class="slide-number">03 / 18</div>
+        <h2 class="slide-title">我们面临的问题</h2>
+        <p class="slide-subtitle">5个真实痛点，你中了几个？</p>
+    </div>
+    <div class="slide-content">
+        <div class="pain-point-list">
+            <div class="pain-item">
+                <div class="pain-number">1</div>
+                <div class="pain-text">测试同学问我"上周Bug率多少"，我翻了3天才找到</div>
+            </div>
+            <div class="pain-item">
+                <div class="pain-number">2</div>
+                <div class="pain-text">同一指标在不同人嘴里是不同含义</div>
+            </div>
+            <div class="pain-item">
+                <div class="pain-number">3</div>
+                <div class="pain-text">想用AI分析数据，结果AI也看不懂我们的指标</div>
+            </div>
+            <div class="pain-item">
+                <div class="pain-number">4</div>
+                <div class="pain-text">47人天/年人工维护，老板问值不值</div>
+            </div>
+            <div class="pain-item">
+                <div class="pain-number">5</div>
+                <div class="pain-text">每当我们要复盘，第一个动作就是：先盘数</div>
+            </div>
+        </div>
+        <div class="data-grid" style="margin-top: 30px;">
+            <div class="data-card">
+                <div class="value">352</div>
+                <div class="label">条指标</div>
+                <div class="desc">命名混乱、口径不一</div>
+            </div>
+            <div class="data-card">
+                <div class="value">34%</div>
+                <div class="label">违规率</div>
+                <div class="desc">命名不符合规范</div>
+            </div>
+            <div class="data-card">
+                <div class="value">47</div>
+                <div class="label">人天/年</div>
+                <div class="desc">人工维护成本</div>
+            </div>
+        </div>
+    </div>
+    """,
+    
+    # Slide 4: 认知重构
+    """
+    <div class="slide-header">
+        <div class="slide-number">04 / 18</div>
+        <h2 class="slide-title">重新认识AI</h2>
+        <p class="slide-subtitle">AI不是工具，是协作者</p>
+    </div>
+    <div class="slide-content">
+        <div class="comparison-grid">
+            <div class="cognition-box traditional">
+                <div class="cognition-label">传统认知</div>
+                <div class="cognition-title">AI = 工具</div>
+                <div class="cognition-desc">你下达指令<br>AI执行</div>
+            </div>
+            <div class="cognition-arrow">→</div>
+            <div class="cognition-box correct">
+                <div class="cognition-label">正确认知</div>
+                <div class="cognition-title">AI = 协作者</div>
+                <div class="cognition-desc">你引导方向，AI探索<br>你提反例，AI修正</div>
+            </div>
+        </div>
+        <div class="golden-quote">
+            <div class="quote-text">让AI先看，别让它先答</div>
+            <div class="quote-desc">先让AI理解上下文，再让它参与分析</div>
+        </div>
+    </div>
+    """,
+] + [make_placeholder_slide(i) for i in range(5, TOTAL_SLIDES)] + [
     # Slide 18: 结尾
     f"""
     <div class="end-slide">
