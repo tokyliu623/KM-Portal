@@ -1128,6 +1128,11 @@ SLIDES_V2 = [
                 <div class="label">人天/年</div>
                 <div class="desc">人工维护成本</div>
             </div>
+            <div class="data-card">
+                <div class="value">0</div>
+                <div class="label">AI能力</div>
+                <div class="desc">自动化程度极低</div>
+            </div>
         </div>
     </div>
     """,
@@ -1159,7 +1164,198 @@ SLIDES_V2 = [
         </div>
     </div>
     """,
-] + [make_placeholder_slide(i) for i in range(5, TOTAL_SLIDES)] + [
+    
+    # Slide 5: 金句1 - AI盘家底
+    """
+    <div class="slide-header">
+        <div class="slide-number">05 / 18</div>
+        <h2 class="slide-title">AI盘家底</h2>
+        <p class="slide-subtitle">让AI先看看你有什么</p>
+    </div>
+    <div class="slide-content">
+        <div class="data-grid">
+            <div class="data-card">
+                <div class="value">460+</div>
+                <div class="label">数据库表</div>
+                <div class="desc">AI扫描</div>
+            </div>
+            <div class="data-card">
+                <div class="value">352</div>
+                <div class="label">条指标</div>
+                <div class="desc">AI提取</div>
+            </div>
+            <div class="data-card">
+                <div class="value">11</div>
+                <div class="label">个二级分类</div>
+                <div class="desc">AI识别</div>
+            </div>
+            <div class="data-card">
+                <div class="value">34%</div>
+                <div class="label">命名违规</div>
+                <div class="desc">AI发现</div>
+            </div>
+        </div>
+        <div class="golden-quote">
+            <div class="quote-text">让AI先看看你有什么</div>
+            <div class="quote-desc">AI扫描全量资产，快速建立全局认知</div>
+        </div>
+    </div>
+    """,
+    
+    # Slide 6: 盘点三步法
+    """
+    <div class="slide-header">
+        <div class="slide-number">06 / 18</div>
+        <h2 class="slide-title">盘点三步法</h2>
+        <p class="slide-subtitle">人机协作的标准化流程</p>
+    </div>
+    <div class="slide-content">
+        <div class="steps-container">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-title">问AI</div>
+                <ul class="step-items">
+                    <li>从哪些维度盘点？</li>
+                    <li>分类标准是什么？</li>
+                    <li>优先级如何排序？</li>
+                </ul>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-title">让AI跑</div>
+                <ul class="step-items">
+                    <li>自动扫描数据库</li>
+                    <li>生成字段字典</li>
+                    <li>输出分类建议</li>
+                </ul>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-title">人机校对</div>
+                <ul class="step-items">
+                    <li>核对分类准确性</li>
+                    <li>确认边界情况</li>
+                    <li>对"为何这样分类"做最终判断</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    """,
+    
+    # Slide 7: 金句2 - AI定规矩
+    """
+    <div class="slide-header">
+        <div class="slide-number">07 / 18</div>
+        <h2 class="slide-title">AI定规矩</h2>
+        <p class="slide-subtitle">规则不是AI定的，是AI和你吵出来的</p>
+    </div>
+    <div class="slide-content">
+        <div class="case-card">
+            <div class="case-header">
+                <div class="case-number">🔄</div>
+                <div class="case-title">人机对话循环</div>
+            </div>
+            <div style="display: flex; justify-content: center; gap: 30px; margin: 20px 0;">
+                <div style="background: rgba(56,178,172,0.2); padding: 15px 25px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 20px; font-weight: 700; color: var(--accent-light);">AI起草</div>
+                </div>
+                <div style="color: var(--accent); font-size: 24px;">→</div>
+                <div style="background: rgba(237,137,54,0.2); padding: 15px 25px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 20px; font-weight: 700; color: var(--warning);">人类给反例</div>
+                </div>
+                <div style="color: var(--accent); font-size: 24px;">→</div>
+                <div style="background: rgba(56,178,172,0.2); padding: 15px 25px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 20px; font-weight: 700; color: var(--accent-light);">AI改稿</div>
+                </div>
+                <div style="color: var(--accent); font-size: 24px;">→</div>
+                <div style="background: rgba(72,187,120,0.2); padding: 15px 25px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 20px; font-weight: 700; color: var(--success);">人类确认</div>
+                </div>
+            </div>
+        </div>
+        <div class="data-grid" style="margin-top: 30px;">
+            <div class="data-card">
+                <div class="value">8</div>
+                <div class="label">条命名规范</div>
+                <div class="desc">最终产出</div>
+            </div>
+            <div class="data-card">
+                <div class="value">20</div>
+                <div class="label">轮人机对话</div>
+                <div class="desc">迭代打磨</div>
+            </div>
+            <div class="data-card">
+                <div class="value">100%</div>
+                <div class="label">覆盖</div>
+                <div class="desc">所有指标类型</div>
+            </div>
+        </div>
+        <div class="golden-quote">
+            <div class="quote-text">规则不是AI定的，是AI和你吵出来的</div>
+            <div class="quote-desc">通过反例驱动规则迭代，确保边界情况被覆盖</div>
+        </div>
+    </div>
+    """,
+    
+    # Slide 8: 规则迭代三阶段
+    """
+    <div class="slide-header">
+        <div class="slide-number">08 / 18</div>
+        <h2 class="slide-title">规则迭代三阶段</h2>
+        <p class="slide-subtitle">从初稿到普适规则的演进路径</p>
+    </div>
+    <div class="slide-content">
+        <table class="rule-table">
+            <thead>
+                <tr>
+                    <th style="width: 120px;">阶段</th>
+                    <th style="width: 200px;">AI角色</th>
+                    <th style="width: 200px;">人类角色</th>
+                    <th>产出</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="rule-id">阶段1</span></td>
+                    <td style="color: var(--accent-light);">出初稿</td>
+                    <td style="color: var(--warning);">提需求</td>
+                    <td>基于典型案例生成规则框架</td>
+                </tr>
+                <tr>
+                    <td><span class="rule-id">阶段2</span></td>
+                    <td style="color: var(--accent-light);">改稿</td>
+                    <td style="color: var(--warning);">给反例</td>
+                    <td>针对边界case持续优化规则</td>
+                </tr>
+                <tr>
+                    <td><span class="rule-id">阶段3</span></td>
+                    <td style="color: var(--accent-light);">归纳普适规则</td>
+                    <td style="color: var(--warning);">最终确认</td>
+                    <td>从具体案例提炼通用原则</td>
+                </tr>
+            </tbody>
+        </table>
+        <div style="margin-top: 40px; display: flex; justify-content: center; gap: 50px;">
+            <div style="text-align: center;">
+                <div style="font-size: 48px; font-weight: 800; color: var(--accent-light);">1</div>
+                <div style="color: var(--text-muted);">个试点场景</div>
+            </div>
+            <div style="color: var(--accent); font-size: 40px; align-self: center;">→</div>
+            <div style="text-align: center;">
+                <div style="font-size: 48px; font-weight: 800; color: var(--accent-light);">8</div>
+                <div style="color: var(--text-muted);">条命名规范</div>
+            </div>
+            <div style="color: var(--accent); font-size: 40px; align-self: center;">→</div>
+            <div style="text-align: center;">
+                <div style="font-size: 48px; font-weight: 800; color: var(--success);">N</div>
+                <div style="color: var(--text-muted);">可复用模板</div>
+            </div>
+        </div>
+    </div>
+    """,
+    
+    # Slide 9-17: 占位符
+    ] + [make_placeholder_slide(i) for i in range(9, TOTAL_SLIDES)] + [
     # Slide 18: 结尾
     f"""
     <div class="end-slide">
