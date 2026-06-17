@@ -1354,8 +1354,186 @@ SLIDES_V2 = [
     </div>
     """,
     
-    # Slide 9-17: 占位符
-    ] + [make_placeholder_slide(i) for i in range(9, TOTAL_SLIDES)] + [
+    # Slide 9: 金句3 - AI查问题
+    """
+    <div class="slide-header">
+        <div class="slide-number">09 / 18</div>
+        <h2 class="slide-title">AI查问题</h2>
+        <p class="slide-subtitle">守住最后一道防线</p>
+    </div>
+    <div class="slide-content">
+        <div class="flow-diagram" style="display: flex; justify-content: center; align-items: center; gap: 30px; margin: 30px 0;">
+            <div style="background: rgba(56,178,172,0.2); padding: 20px 30px; border-radius: 12px; text-align: center; border: 2px solid var(--accent);">
+                <div style="font-size: 18px; font-weight: 700; color: var(--accent-light);">提交数据</div>
+            </div>
+            <div style="color: var(--accent); font-size: 30px;">→</div>
+            <div style="background: rgba(56,178,172,0.2); padding: 20px 30px; border-radius: 12px; text-align: center; border: 2px solid var(--accent);">
+                <div style="font-size: 18px; font-weight: 700; color: var(--accent-light);">AI自动稽核</div>
+            </div>
+            <div style="color: var(--accent); font-size: 30px;">→</div>
+            <div style="background: rgba(252,129,129,0.2); padding: 20px 30px; border-radius: 12px; text-align: center; border: 2px solid var(--danger);">
+                <div style="font-size: 18px; font-weight: 700; color: var(--danger);">问题告警/阻断上线</div>
+            </div>
+        </div>
+        <div style="display: flex; justify-content: center; gap: 40px; margin: 40px 0;">
+            <div style="text-align: center; padding: 30px; background: rgba(255,255,255,0.05); border-radius: 16px; flex: 1; max-width: 400px;">
+                <div style="font-size: 16px; color: var(--text-muted); margin-bottom: 10px;">关键洞察</div>
+                <div style="font-size: 28px; font-weight: 700; color: var(--accent-light);">分子 > 分母</div>
+                <div style="font-size: 20px; color: var(--text-light); margin-top: 10px;">= 必有Bug</div>
+            </div>
+            <div style="text-align: center; padding: 30px; background: rgba(72,187,120,0.1); border-radius: 16px; border: 2px solid var(--success); flex: 1; max-width: 400px;">
+                <div style="font-size: 16px; color: var(--text-muted); margin-bottom: 10px;">AI自动拦截</div>
+                <div style="font-size: 28px; font-weight: 700; color: var(--success);">100%</div>
+                <div style="font-size: 20px; color: var(--text-light); margin-top: 10px;">逻辑校验</div>
+            </div>
+        </div>
+        <div class="golden-quote">
+            <div class="quote-text">AI守住最后一道防线：分子大于分母就是事故</div>
+            <div class="quote-desc">DQE稽核流程：AI自动拦截异常数据</div>
+        </div>
+    </div>
+    """,
+    
+    # Slide 10: 5类自动检查
+    """
+    <div class="slide-header">
+        <div class="slide-number">10 / 18</div>
+        <h2 class="slide-title">5类自动检查</h2>
+        <p class="slide-subtitle">AI驱动的全链路质量校验</p>
+    </div>
+    <div class="slide-content">
+        <table class="check-table" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+            <thead>
+                <tr>
+                    <th style="padding: 15px 20px; text-align: left; background: rgba(255,255,255,0.05); color: var(--accent); font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1);">检查类型</th>
+                    <th style="padding: 15px 20px; text-align: left; background: rgba(255,255,255,0.05); color: var(--accent); font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1);">检查内容</th>
+                    <th style="padding: 15px 20px; text-align: left; background: rgba(255,255,255,0.05); color: var(--accent); font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1);">示例</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);"><span style="background: rgba(56,178,172,0.2); padding: 5px 12px; border-radius: 20px; font-weight: 600;">字段完整性</span></td>
+                    <td style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-light);">必填字段是否缺失</td>
+                    <td style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);">发现时间必须100%存在</td>
+                </tr>
+                <tr>
+                    <td style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);"><span style="background: rgba(56,178,172,0.2); padding: 5px 12px; border-radius: 20px; font-weight: 600;">数值合理性</span></td>
+                    <td style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-light);">分子≤分母</td>
+                    <td style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);">投诉量≤用户量</td>
+                </tr>
+                <tr>
+                    <td style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);"><span style="background: rgba(56,178,172,0.2); padding: 5px 12px; border-radius: 20px; font-weight: 600;">单位一致性</span></td>
+                    <td style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-light);">同类指标单位统一</td>
+                    <td style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);">ppm vs % 不混用</td>
+                </tr>
+                <tr>
+                    <td style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);"><span style="background: rgba(56,178,172,0.2); padding: 5px 12px; border-radius: 20px; font-weight: 600;">命名规范性</span></td>
+                    <td style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-light);">R01-R08规范检查</td>
+                    <td style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);">动宾结构/无连字符</td>
+                </tr>
+                <tr>
+                    <td style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);"><span style="background: rgba(56,178,172,0.2); padding: 5px 12px; border-radius: 20px; font-weight: 600;">分类正确性</span></td>
+                    <td style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-light);">决策树验证</td>
+                    <td style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);">FL vs ST 边界</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    """,
+    
+    # Slide 11: 金句4 - AI当专家
+    """
+    <div class="slide-header">
+        <div class="slide-number">11 / 18</div>
+        <h2 class="slide-title">AI当专家</h2>
+        <p class="slide-subtitle">6视角专家协同模型</p>
+    </div>
+    <div class="slide-content">
+        <div class="expert-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+            <div class="expert-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border-left: 4px solid #ff6b6b;">
+                <div style="font-size: 16px; font-weight: 700; color: #ff6b6b; margin-bottom: 10px;">数据专家</div>
+                <div style="font-size: 13px; color: var(--text-muted);">数据模型合理性、字段规范、血缘完整性</div>
+            </div>
+            <div class="expert-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border-left: 4px solid #4ecdc4;">
+                <div style="font-size: 16px; font-weight: 700; color: #4ecdc4; margin-bottom: 10px;">质量专家</div>
+                <div style="font-size: 13px; color: var(--text-muted);">功能覆盖度、验收用例完整性、边界条件</div>
+            </div>
+            <div class="expert-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border-left: 4px solid #ffe66d;">
+                <div style="font-size: 16px; font-weight: 700; color: #ffe66d; margin-bottom: 10px;">开发专家</div>
+                <div style="font-size: 13px; color: var(--text-muted);">API设计合理性、技术可行性、错误处理</div>
+            </div>
+            <div class="expert-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border-left: 4px solid #95e1d3;">
+                <div style="font-size: 16px; font-weight: 700; color: #95e1d3; margin-bottom: 10px;">文档专家</div>
+                <div style="font-size: 13px; color: var(--text-muted);">文档结构规范、命名一致性、格式统一</div>
+            </div>
+            <div class="expert-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border-left: 4px solid #a8e6cf;">
+                <div style="font-size: 16px; font-weight: 700; color: #a8e6cf; margin-bottom: 10px;">治理专家</div>
+                <div style="font-size: 13px; color: var(--text-muted);">规则体系一致性、分类合理性、治理覆盖</div>
+            </div>
+            <div class="expert-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border-left: 4px solid #dcedc1;">
+                <div style="font-size: 16px; font-weight: 700; color: #dcedc1; margin-bottom: 10px;">运营专家</div>
+                <div style="font-size: 13px; color: var(--text-muted);">使用体验、流程合理性、可操作性</div>
+            </div>
+        </div>
+        <div style="text-align: center; padding: 20px; background: rgba(56,178,172,0.1); border-radius: 12px; margin-bottom: 20px;">
+            <div style="font-size: 18px; color: var(--text-muted);">关键数据</div>
+            <div style="font-size: 36px; font-weight: 800; color: var(--accent-light);">1次产出，6倍质量</div>
+        </div>
+        <div class="golden-quote">
+            <div class="quote-text">你不是缺SQA，你是缺6个不同视角的AI</div>
+            <div class="quote-desc">让AI扮演不同角色专家，全面审视</div>
+        </div>
+    </div>
+    """,
+    
+    # Slide 12: AI角色化复用
+    """
+    <div class="slide-header">
+        <div class="slide-number">12 / 18</div>
+        <h2 class="slide-title">AI角色化复用</h2>
+        <p class="slide-subtitle">同一AI，6套人设提示词</p>
+    </div>
+    <div class="slide-content">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 25px; margin: 30px 0;">
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="background: rgba(56,178,172,0.2); padding: 20px 40px; border-radius: 12px; border: 2px solid var(--accent); text-align: center;">
+                    <div style="font-size: 18px; font-weight: 700; color: var(--accent-light);">同一个AI</div>
+                    <div style="font-size: 14px; color: var(--text-muted); margin-top: 5px;">6套人设提示词</div>
+                </div>
+            </div>
+            <div style="color: var(--accent); font-size: 30px;">↓</div>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="background: rgba(237,137,54,0.2); padding: 20px 40px; border-radius: 12px; border: 2px solid var(--warning); text-align: center;">
+                    <div style="font-size: 18px; font-weight: 700; color: var(--warning);">每个角色</div>
+                    <div style="font-size: 14px; color: var(--text-muted); margin-top: 5px;">独立审视</div>
+                </div>
+            </div>
+            <div style="color: var(--accent); font-size: 30px;">↓</div>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="background: rgba(56,178,172,0.2); padding: 20px 40px; border-radius: 12px; border: 2px solid var(--accent); text-align: center;">
+                    <div style="font-size: 18px; font-weight: 700; color: var(--accent-light);">AI汇总</div>
+                    <div style="font-size: 14px; color: var(--text-muted); margin-top: 5px;">冲突点</div>
+                </div>
+            </div>
+            <div style="color: var(--accent); font-size: 30px;">↓</div>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="background: rgba(72,187,120,0.2); padding: 20px 40px; border-radius: 12px; border: 2px solid var(--success); text-align: center;">
+                    <div style="font-size: 18px; font-weight: 700; color: var(--success);">人类</div>
+                    <div style="font-size: 14px; color: var(--text-muted); margin-top: 5px;">最终裁决</div>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 30px;">
+            <div style="display: inline-block; background: rgba(255,255,255,0.05); padding: 20px 40px; border-radius: 12px;">
+                <div style="font-size: 16px; color: var(--text-muted); margin-bottom: 10px;">方法论核心</div>
+                <div style="font-size: 20px; font-weight: 600; color: var(--text-light);">角色切换 = 视角切换 = 质量提升</div>
+            </div>
+        </div>
+    </div>
+    """,
+    
+    # Slide 13-17: 占位符
+    ] + [make_placeholder_slide(i) for i in range(13, TOTAL_SLIDES)] + [
     # Slide 18: 结尾
     f"""
     <div class="end-slide">
