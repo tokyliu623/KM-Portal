@@ -930,6 +930,200 @@ body {
     color: var(--text-muted);
 }
 
+.timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.timeline-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: rgba(255,255,255,0.03);
+    padding: 15px 20px;
+    border-radius: 12px;
+    border-left: 4px solid var(--accent);
+}
+
+.timeline-version {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent-light);
+    min-width: 60px;
+}
+
+.timeline-time {
+    font-size: 14px;
+    color: var(--text-muted);
+    min-width: 100px;
+}
+
+.timeline-role {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-white);
+    flex: 1;
+}
+
+.maturity-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.maturity-table th,
+.maturity-table td {
+    padding: 15px 20px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.maturity-table th {
+    background: rgba(255,255,255,0.05);
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.maturity-level {
+    display: inline-block;
+    background: var(--accent);
+    color: var(--primary-dark);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+}
+
+.heart-method {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+    margin-top: 20px;
+}
+
+.heart-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 16px;
+    padding: 25px;
+    border-top: 4px solid var(--accent);
+}
+
+.heart-number {
+    font-size: 14px;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.heart-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-white);
+    margin-bottom: 15px;
+}
+
+.heart-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.heart-insight {
+    margin-top: 15px;
+    padding: 12px 15px;
+    background: rgba(56,178,172,0.1);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--accent-light);
+}
+
+.action-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.action-item {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    background: rgba(255,255,255,0.05);
+    padding: 25px 30px;
+    border-radius: 16px;
+    border-left: 4px solid var(--success);
+}
+
+.action-number {
+    width: 50px;
+    height: 50px;
+    background: var(--success);
+    color: var(--primary-dark);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.action-content {
+    flex: 1;
+}
+
+.action-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-white);
+    margin-bottom: 8px;
+}
+
+.action-detail {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.action-tool {
+    background: rgba(56,178,172,0.2);
+    border: 1px solid var(--accent);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent-light);
+}
+
+.summary-quote {
+    text-align: center;
+    padding: 60px 40px;
+    background: linear-gradient(135deg, rgba(56,178,172,0.2), rgba(79,209,197,0.1));
+    border-radius: 24px;
+    border: 2px solid var(--accent);
+}
+
+.summary-main {
+    font-size: 48px;
+    font-weight: 800;
+    color: var(--text-white);
+    margin-bottom: 30px;
+    line-height: 1.4;
+}
+
+.summary-main .highlight {
+    color: var(--accent-light);
+}
+
+.summary-sub {
+    font-size: 22px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
 @media (max-width: 1200px) {
     .slide {
         padding: 40px 50px;
@@ -1532,8 +1726,209 @@ SLIDES_V2 = [
     </div>
     """,
     
-    # Slide 13-17: 占位符
-    ] + [make_placeholder_slide(i) for i in range(13, TOTAL_SLIDES)] + [
+    # Slide 13: 金句5 - AI陪迭代
+    """
+    <div class="slide-header">
+        <div class="slide-number">13 / 18</div>
+        <h2 class="slide-title">AI陪迭代</h2>
+        <p class="slide-subtitle">从v1到v6的搭子进化史</p>
+    </div>
+    <div class="slide-content">
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-version">v1.0</div>
+                <div class="timeline-time">2026-05初</div>
+                <div class="timeline-role">打字员（照单全收）</div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-version">v2.0</div>
+                <div class="timeline-time">2026-05中</div>
+                <div class="timeline-role">助手（起草+改稿）</div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-version">v3.0</div>
+                <div class="timeline-time">2026-05中</div>
+                <div class="timeline-role">协作者（建议+人裁决）</div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-version">v4.0</div>
+                <div class="timeline-time">2026-05下</div>
+                <div class="timeline-role">吵架伙伴（反例+修正）</div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-version">v5.0</div>
+                <div class="timeline-time">2026-06初</div>
+                <div class="timeline-role">搭子（共创规则）</div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-version">v6.0</div>
+                <div class="timeline-time">2026-06中</div>
+                <div class="timeline-role">决策顾问（辅助决策）</div>
+            </div>
+        </div>
+        <div class="golden-quote">
+            <div class="quote-text">AI不是你的工具，是陪你从v1到v6的搭子</div>
+            <div class="quote-desc">关系演进：工具 → 助手 → 协作者 → 搭子</div>
+        </div>
+    </div>
+    """,
+    
+    # Slide 14: 人机协奏成熟度模型
+    """
+    <div class="slide-header">
+        <div class="slide-number">14 / 18</div>
+        <h2 class="slide-title">人机协奏成熟度模型</h2>
+        <p class="slide-subtitle">6级成熟度，AI角色演进</p>
+    </div>
+    <div class="slide-content">
+        <table class="maturity-table">
+            <thead>
+                <tr>
+                    <th style="width: 100px;">成熟度</th>
+                    <th style="width: 150px;">AI角色</th>
+                    <th>特征</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="maturity-level">L1</span></td>
+                    <td style="color: var(--text-muted);">打字员</td>
+                    <td style="color: var(--text-light);">照单全收，等待指令</td>
+                </tr>
+                <tr>
+                    <td><span class="maturity-level">L2</span></td>
+                    <td style="color: var(--accent-light);">助手</td>
+                    <td style="color: var(--text-light);">起草+改稿，执行明确任务</td>
+                </tr>
+                <tr>
+                    <td><span class="maturity-level">L3</span></td>
+                    <td style="color: var(--accent-light);">协作者</td>
+                    <td style="color: var(--text-light);">建议+人裁决，共同推进</td>
+                </tr>
+                <tr>
+                    <td><span class="maturity-level">L4</span></td>
+                    <td style="color: var(--warning);">吵架伙伴</td>
+                    <td style="color: var(--text-light);">反例+修正，互相挑战</td>
+                </tr>
+                <tr>
+                    <td><span class="maturity-level">L5</span></td>
+                    <td style="color: var(--success);">搭子</td>
+                    <td style="color: var(--text-light);">共创规则，平等协作</td>
+                </tr>
+                <tr>
+                    <td><span class="maturity-level">L6</span></td>
+                    <td style="color: var(--success);">决策顾问</td>
+                    <td style="color: var(--text-light);">辅助决策，提供备选</td>
+                </tr>
+            </tbody>
+        </table>
+        <div style="margin-top: 40px; text-align: center;">
+            <div style="display: inline-block; background: rgba(72,187,120,0.1); padding: 20px 40px; border-radius: 12px; border: 2px solid var(--success);">
+                <div style="font-size: 16px; color: var(--text-muted); margin-bottom: 10px;">当前状态</div>
+                <div style="font-size: 28px; font-weight: 700; color: var(--success);">L5 搭子阶段</div>
+            </div>
+        </div>
+    </div>
+    """,
+    
+    # Slide 15: 核心心法
+    """
+    <div class="slide-header">
+        <div class="slide-number">15 / 18</div>
+        <h2 class="slide-title">核心心法</h2>
+        <p class="slide-subtitle">3条可迁移经验</p>
+    </div>
+    <div class="slide-content">
+        <div class="heart-method">
+            <div class="heart-card">
+                <div class="heart-number">心法 1</div>
+                <div class="heart-title">让AI先看，别让它先答</div>
+                <div class="heart-desc">先让AI理解上下文，再让它参与分析</div>
+                <div class="heart-insight">核心：盘点资产→发现规律→提出建议→人裁决</div>
+            </div>
+            <div class="heart-card">
+                <div class="heart-number">心法 2</div>
+                <div class="heart-title">AI的价值不在聪明，在稳定</div>
+                <div class="heart-desc">100次跑、100次一样</div>
+                <div class="heart-insight">核心：稽核/检查/模板生成，稳定输出</div>
+            </div>
+            <div class="heart-card">
+                <div class="heart-number">心法 3</div>
+                <div class="heart-title">AI不是替代SQA，是放大SQA</div>
+                <div class="heart-desc">1个SQA × AI = 6倍覆盖度</div>
+                <div class="heart-insight">核心：AI扩展视角，人保持判断力</div>
+            </div>
+        </div>
+    </div>
+    """,
+    
+    # Slide 16: 迁移行动
+    """
+    <div class="slide-header">
+        <div class="slide-number">16 / 18</div>
+        <h2 class="slide-title">迁移行动</h2>
+        <p class="slide-subtitle">今天就能做的3件事</p>
+    </div>
+    <div class="slide-content">
+        <div class="action-list">
+            <div class="action-item">
+                <div class="action-number">1</div>
+                <div class="action-content">
+                    <div class="action-title">把团队指标名/字段名丢给AI</div>
+                    <div class="action-detail">让AI找违规：命名不规范、分类错误、口径不一致</div>
+                </div>
+                <div class="action-tool">BlueCode CLI</div>
+            </div>
+            <div class="action-item">
+                <div class="action-number">2</div>
+                <div class="action-content">
+                    <div class="action-title">把常见报表SQL丢给AI</div>
+                    <div class="action-detail">让AI写稽核脚本：分子≤分母、NULL处理、日期边界</div>
+                </div>
+                <div class="action-tool">BlueCode CLI</div>
+            </div>
+            <div class="action-item">
+                <div class="action-number">3</div>
+                <div class="action-content">
+                    <div class="action-title">把文档丢给AI</div>
+                    <div class="action-detail">让AI扮演5个角色挑刺：数据/质量/开发/文档/治理</div>
+                </div>
+                <div class="action-tool">BlueCode Skill</div>
+            </div>
+        </div>
+    </div>
+    """,
+    
+    # Slide 17: 升华结尾
+    """
+    <div class="slide-header">
+        <div class="slide-number">17 / 18</div>
+        <h2 class="slide-title">升华</h2>
+        <p class="slide-subtitle">测试人 + AI = 一支军队</p>
+    </div>
+    <div class="slide-content">
+        <div class="summary-quote">
+            <div class="summary-main">
+                测试人 <span class="highlight">+</span> AI <span class="highlight">=</span> 一支军队
+            </div>
+            <div class="summary-sub">
+                不是AI替你干活，是你带着AI组成了一支你以前组不起的团队
+            </div>
+        </div>
+        <div style="display: flex; justify-content: center; gap: 40px; margin-top: 50px;">
+            <div style="text-align: center; padding: 25px 40px; background: rgba(255,255,255,0.05); border-radius: 16px;">
+                <div style="font-size: 16px; color: var(--text-muted); margin-bottom: 10px;">以前</div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--danger);">1个人</div>
+            </div>
+            <div style="color: var(--accent); font-size: 40px; align-self: center;">→</div>
+            <div style="text-align: center; padding: 25px 40px; background: rgba(72,187,120,0.1); border-radius: 16px; border: 2px solid var(--success);">
+                <div style="font-size: 16px; color: var(--text-muted); margin-bottom: 10px;">现在</div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--success);">1人+AI团队</div>
+            </div>
+        </div>
+    </div>
+    """,
+    
     # Slide 18: 结尾
     f"""
     <div class="end-slide">
