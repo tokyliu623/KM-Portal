@@ -920,22 +920,23 @@ def make_placeholder_slide(num, total=TOTAL_SLIDES):
 
 SLIDES_V2 = [
     # Slide 1: 封面
-    f"""
+    """
     <div class="cover-slide">
-        <div class="series-tag">{SERIES}</div>
+        <div class="series-tag">AM TALKS - 006</div>
         <h1 class="main-title">
-            {TITLE}<br>
-            <span class="highlight">{VERSION}</span>
+            从 <span class="highlight">34%</span> 到 <span class="highlight">100%</span><br>
+            352条指标的命名规范治理之路
         </h1>
-        <p class="author">{AUTHOR}</p>
-        <p class="date">{DATE}</p>
+        <p class="subtitle">AI协同方法论实践</p>
+        <p class="author">刘荣新</p>
+        <p class="date">2026年6月</p>
     </div>
     """,
     
     # Slide 2: 目录
-    f"""
+    """
     <div class="slide-header">
-        <div class="slide-number">02 / {TOTAL_SLIDES}</div>
+        <div class="slide-number">02 / 18</div>
         <h2 class="slide-title">目录</h2>
     </div>
     <div class="slide-content">
@@ -943,22 +944,22 @@ SLIDES_V2 = [
             <div class="toc-item">
                 <div class="toc-number">01</div>
                 <div class="toc-title">问题背景</div>
-                <div class="toc-desc">待补充</div>
+                <div class="toc-desc">5个真实痛点</div>
             </div>
             <div class="toc-item">
                 <div class="toc-number">02</div>
-                <div class="toc-title">解决方案</div>
-                <div class="toc-desc">待补充</div>
+                <div class="toc-title">AI协同五式</div>
+                <div class="toc-desc">盘/定/查/当/陪</div>
             </div>
             <div class="toc-item">
                 <div class="toc-number">03</div>
-                <div class="toc-title">实践案例</div>
-                <div class="toc-desc">待补充</div>
+                <div class="toc-title">核心心法</div>
+                <div class="toc-desc">3条可迁移经验</div>
             </div>
             <div class="toc-item">
                 <div class="toc-number">04</div>
-                <div class="toc-title">经验总结</div>
-                <div class="toc-desc">待补充</div>
+                <div class="toc-title">迁移行动</div>
+                <div class="toc-desc">今天就能做的3件事</div>
             </div>
         </div>
     </div>
