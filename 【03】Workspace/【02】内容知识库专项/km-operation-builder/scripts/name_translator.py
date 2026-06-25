@@ -13,13 +13,151 @@ from typing import List, Dict, Any, Optional
 KM_API_URL = "https://qds-test.vmic.xyz/api/km-api"
 
 
-def translate_kb_name(kb_name: str, count: int = 3) -> Dict[str, Any]:
+class TranslationError(Exception):
+    """翻译异常"""
+    pass
+
+
+class TranslateSession:
+    """翻译会话管理（按 kb_id 隔离）"""
+
+    _sessions: Dict[int, 'TranslateSession'] = {}
+
+    def __init__(self, kb_id: int, km_api_url: str = KM_API_URL):
+        self.kb_id = kb_id
+        self.km_api_url = km_api_url
+        self.conversation_id: Optional[str] = None
+
+    @classmethod
+    def get_session(cls, kb_id: int, km_api_url: str = KM_API_URL) -> 'TranslateSession':
+        if kb_id not in cls._sessions:
+            cls._sessions[kb_id] = TranslateSession(kb_id, km_api_url)
+        return cls._sessions[kb_id]
+
+    def translate(self, prompt: str) -> Dict[str, Any]:
+        """执行翻译请求"""
+        import urllib.request
+
+        payload: Dict[str, Any] = {"prompt": prompt, "kb_id": self.kb_id}
+        if self.conversation_id:
+            payload["conversation_id"] = self.conversation_id
+
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            self.km_api_url + "/llm/translate",
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=30) as response:
+                result = json.loads(response.read().decode("utf-8"))
+
+            if result.get("success") and result.get("data", {}).get("conversation_id"):
+                self.conversation_id = result["data"]["conversation_id"]
+
+            return result
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    def close(self):
+        """关闭会话"""
+        self.conversation_id = None
+
+
+def translate_kb_name_strict(kb_name: str, kb_id: int = 0) -> Dict[str, Any]:
+    """
+    强制翻译知识库名称（翻译失败时抛出异常）
+
+    Args:
+        kb_name: 知识库名称（中文）
+
+    Returns:
+        {
+            success: True,
+            name: str  # 翻译后的英文名称
+        }
+
+    Raises:
+        TranslationError: 翻译失败时抛出
+    """
+    prompt = f"""你是一个专业的命名助手。请将以下中文知识库名称翻译成英文，用于生成 BlueCode Skill 名称。
+
+要求：
+1. 生成 1 个简洁的英文翻译
+2. 名称应该体现知识库的核心主题
+3. 只返回英文名称，不要解释
+
+知识库名称：{kb_name}
+
+请以 JSON 格式返回：
+{{"name": "英文名称"}}
+"""
+
+    try:
+        if kb_id:
+            session = TranslateSession.get_session(kb_id)
+            result = session.translate(prompt)
+        else:
+            import urllib.request
+            import urllib.parse
+
+            url = f"{KM_API_URL}/llm/translate"
+            data = json.dumps({"prompt": prompt}).encode("utf-8")
+            req = urllib.request.Request(
+                url,
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+
+            with urllib.request.urlopen(req, timeout=30) as response:
+                result = json.loads(response.read().decode("utf-8"))
+
+        if result.get("success"):
+            raw_text = result.get("data", {}).get("content", "")
+            name = _parse_strict_name(raw_text)
+            if name:
+                return {
+                    "success": True,
+                    "name": name
+                }
+
+        raise TranslationError(f"翻译接口返回异常或未返回有效结果")
+
+    except TranslationError:
+        raise
+    except Exception as e:
+        raise TranslationError(f"翻译失败: {str(e)}")
+
+
+def _parse_strict_name(raw_text: str) -> Optional[str]:
+    """解析严格翻译结果"""
+    raw_text = raw_text.strip()
+
+    json_match = re.search(r'\{[^{}]*"name"\s*:\s*"([^"]+)"[^{}]*\}', raw_text, re.DOTALL)
+    if json_match:
+        return json_match.group(1).strip()
+
+    try:
+        data = json.loads(raw_text)
+        if data.get("name"):
+            return str(data["name"]).strip()
+    except json.JSONDecodeError:
+        pass
+
+    return None
+
+
+def translate_kb_name(kb_name: str, count: int = 3, kb_id: int = 0) -> Dict[str, Any]:
     """
     调用大模型翻译知识库名称
 
     Args:
         kb_name: 知识库名称（中文）
         count: 返回候选数量（默认3）
+        kb_id: 知识库ID（用于会话隔离）
 
     Returns:
         {
@@ -44,20 +182,24 @@ def translate_kb_name(kb_name: str, count: int = 3) -> Dict[str, Any]:
 """
 
     try:
-        import urllib.request
-        import urllib.parse
+        if kb_id:
+            session = TranslateSession.get_session(kb_id)
+            result = session.translate(prompt)
+        else:
+            import urllib.request
+            import urllib.parse
 
-        url = f"{KM_API_URL}/llm/translate"
-        data = json.dumps({"prompt": prompt}).encode("utf-8")
-        req = urllib.request.Request(
-            url,
-            data=data,
-            headers={"Content-Type": "application/json"},
-            method="POST"
-        )
+            url = f"{KM_API_URL}/llm/translate"
+            data = json.dumps({"prompt": prompt}).encode("utf-8")
+            req = urllib.request.Request(
+                url,
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
 
-        with urllib.request.urlopen(req, timeout=30) as response:
-            result = json.loads(response.read().decode("utf-8"))
+            with urllib.request.urlopen(req, timeout=30) as response:
+                result = json.loads(response.read().decode("utf-8"))
 
         if result.get("success"):
             raw_text = result.get("data", {}).get("content", "")
@@ -85,13 +227,14 @@ def translate_kb_name(kb_name: str, count: int = 3) -> Dict[str, Any]:
         }
 
 
-def generate_skill_name_candidates(kb_name: str, count: int = 3) -> Dict[str, Any]:
+def generate_skill_name_candidates(kb_name: str, count: int = 3, kb_id: int = 0) -> Dict[str, Any]:
     """
     生成 Skill 名称候选
 
     Args:
         kb_name: 知识库名称
         count: 候选数量（默认3）
+        kb_id: 知识库ID（用于会话隔离）
 
     Returns:
         {
@@ -115,19 +258,23 @@ def generate_skill_name_candidates(kb_name: str, count: int = 3) -> Dict[str, An
 """
 
     try:
-        import urllib.request
+        if kb_id:
+            session = TranslateSession.get_session(kb_id)
+            result = session.translate(prompt)
+        else:
+            import urllib.request
 
-        url = f"{KM_API_URL}/llm/translate"
-        data = json.dumps({"prompt": prompt}).encode("utf-8")
-        req = urllib.request.Request(
-            url,
-            data=data,
-            headers={"Content-Type": "application/json"},
-            method="POST"
-        )
+            url = f"{KM_API_URL}/llm/translate"
+            data = json.dumps({"prompt": prompt}).encode("utf-8")
+            req = urllib.request.Request(
+                url,
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
 
-        with urllib.request.urlopen(req, timeout=30) as response:
-            result = json.loads(response.read().decode("utf-8"))
+            with urllib.request.urlopen(req, timeout=30) as response:
+                result = json.loads(response.read().decode("utf-8"))
 
         if result.get("success"):
             raw_text = result.get("data", {}).get("content", "")
