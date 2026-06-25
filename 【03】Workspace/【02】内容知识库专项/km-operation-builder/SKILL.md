@@ -12,7 +12,7 @@ description: 知识库运营Skill生成器。触发词：知识库运营、KB开
 | 属性 | 值 |
 |------|-----|
 | **名称** | km-operation-builder |
-| **版本** | 1.0.4 |
+| **版本** | 1.0.0 |
 | **描述** | 知识库运营Skill生成器，通过配置引导快速生成标准化的知识库运营Skill |
 | **触发词** | 知识库运营、KB开发、知识库模板、创建KB Skill |
 
@@ -36,10 +36,9 @@ result = builder_create(
 ```python
 {
     "success": True,
-    "token_id": "a1572c9b-1c73-438b-addb-331d9b8ef1f8",
     "skill_name": "kb-zhi-jian-wei-lai-operation",
     "install_path": "C:/Users/xxx/.config/bluecode/skills/kb-zhi-jian-wei-lai-operation",
-    "zip_path": "C:/Users/xxx/.config/bluecode/skills/kb-zhi-jian-wei-lai-operation-v1.0.2.zip",
+    "zip_path": "C:/Users/xxx/.config/bluecode/skills/kb-zhi-jian-wei-lai-operation-v1.0.0.zip",
     "message": "知识库运营助手创建成功！..."
 }
 ```
@@ -50,10 +49,11 @@ result = builder_create(
 用户 A 创建助手：
 ┌─────────────────────────────────────────────────────────────────┐
 │ 1. builder_create(kb_name, kb_id, token, owner)                 │
-│ 2. KM-API 验证 token → 返回 token_id                            │
-│ 3. 生成 Skill（配置: token_id + kb_id + kb_name）               │
-│ 4. 自动安装到 ~/.config/bluecode/skills/                        │
-│ 5. 自动打包为 kb-{name}-operation-v1.0.2.zip                    │
+│ 2. 验证 kb_id 权限                                              │
+│ 3. 上传 token 到 KM-API（服务端存储 token ↔ kb_id 映射）        │
+│ 4. 生成 Skill（配置: kb_id + kb_name，无 token 信息）           │
+│ 5. 自动安装到 ~/.config/bluecode/skills/                        │
+│ 6. 自动打包为 kb-{name}-operation-v1.0.0.zip                    │
 └─────────────────────────────────────────────────────────────────┘
 
 用户 B 使用助手：
@@ -77,7 +77,7 @@ result = builder_create(
 ## API 配置
 
 - **KM-API 服务**: https://qds-test.vmic.xyz/api/km-api（硬编码，无需配置）
-- **认证方式**: token_id（KM-API 返回的 UUID）
+- **认证方式**: kb_id（KM-API 服务端自动通过 kb_id 查找对应 token）
 
 ## 模板类型
 
@@ -103,7 +103,7 @@ result = builder_check_connection()
 ```python
 from scripts.builder_entry import builder_translate_name
 
-result = builder_translate_name("质见未来", count=3)
+result = builder_translate_name("质见未来", count=3, kb_id=25706)
 # 返回: {
 #     "success": True,
 #     "candidates": [
@@ -114,6 +114,8 @@ result = builder_translate_name("质见未来", count=3)
 #     "original": "质见未来"
 # }
 ```
+
+> **kb_id 参数说明**：传入知识库 ID 可启用会话复用，同一知识库的多次翻译共享上下文，提升翻译一致性。不传则每次请求独立会话。
 
 ### 验证 kb_id 权限
 
@@ -161,7 +163,7 @@ kb-{name}-operation/
 ├── SKILL.md                  # Skill入口（UTF-8 BOM + front matter）
 ├── README.md                 # 使用说明
 ├── config/
-│   └── user.json             # 用户配置（token_id + kb_id + kb_name）
+│   └── user.json             # 用户配置（kb_id + kb_name）
 └── scripts/
     ├── __init__.py           # 统一入口
     ├── kb_config.py          # 配置管理
