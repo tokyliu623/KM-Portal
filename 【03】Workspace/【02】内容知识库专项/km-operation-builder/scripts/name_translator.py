@@ -126,18 +126,7 @@ def translate_kb_name_strict(kb_name: str, kb_id: int = 0) -> Dict[str, Any]:
     Raises:
         TranslationError: 翻译失败时抛出
     """
-    prompt = f"""你是一个专业的命名助手。请将以下中文知识库名称翻译成英文，用于生成 BlueCode Skill 名称。
-
-要求：
-1. 生成 1 个简洁的英文翻译
-2. 名称应该体现知识库的核心主题
-3. 只返回英文名称，不要解释
-
-知识库名称：{kb_name}
-
-请以 JSON 格式返回：
-{{"name": "英文名称"}}
-"""
+    prompt = kb_name
 
     try:
         if kb_id:
@@ -198,19 +187,7 @@ def translate_kb_name(kb_name: str, count: int = 3, kb_id: int = 0) -> Dict[str,
             error: str              # 失败时返回
         }
     """
-    prompt = f"""你是一个专业的命名助手。请将以下中文知识库名称翻译成英文，用于生成 BlueCode Skill 名称。
-
-要求：
-1. 生成 {count} 个不同的英文翻译候选
-2. 每个名称应该是简洁的英文词组（2-4个单词）
-3. 名称应该体现知识库的核心主题
-4. 只返回英文名称，不要解释
-
-知识库名称：{kb_name}
-
-请以 JSON 格式返回，格式如下：
-{{"candidates": ["名称1", "名称2", "名称3"]}}
-"""
+    prompt = kb_name
 
     try:
         if kb_id:
@@ -261,19 +238,7 @@ def generate_skill_name_candidates(kb_name: str, count: int = 3, kb_id: int = 0)
             source: str
         }
     """
-    prompt = f"""你是一个 BlueCode Skill 命名专家。请为以下知识库生成 {count} 个英文 Skill 名称候选。
-
-要求：
-1. 名称格式：kb-{{英文名}}-operation
-2. 英文名使用 kebab-case（连字符分隔）
-3. 每个候选应该是独特的
-4. 只返回名称列表
-
-知识库名称：{kb_name}
-
-请以 JSON 格式返回：
-{{"candidates": ["kb-name1-operation", "kb-name2-operation", "kb-name3-operation"]}}
-"""
+    prompt = kb_name
 
     try:
         if kb_id:
@@ -310,6 +275,13 @@ def _parse_candidates(raw_text: str) -> List[str]:
         解析出的候选名称列表
     """
     raw_text = raw_text.strip()
+
+    # 九问 Bot 固定格式：知识库中文名：xxx\n知识库英文名：yyy
+    en_name_match = re.search(r'知识库英文名[：:]\s*(.+)', raw_text)
+    if en_name_match:
+        en_name = en_name_match.group(1).strip()
+        if en_name:
+            return [en_name]
 
     json_match = re.search(r'\{[^{}]*"candidates"\s*:\s*\[[^\]]+\][^{}]*\}', raw_text, re.DOTALL)
     if json_match:
