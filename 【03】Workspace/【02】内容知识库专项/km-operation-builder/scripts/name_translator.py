@@ -8,9 +8,12 @@ name_translator.py - 名称翻译模块
 import re
 import json
 import pypinyin
+import threading
+import time
 from typing import List, Dict, Any, Optional
 
 KM_API_URL = "https://qds-test.vmic.xyz/api/km-api"
+SESSION_TIMEOUT_SECONDS = 60 * 60  # 1小时
 
 
 class TranslationError(Exception):
@@ -18,41 +21,82 @@ class TranslationError(Exception):
     pass
 
 
+def _http_post(url: str, payload: Dict[str, Any], timeout: int = 30) -> Dict[str, Any]:
+    """发送 HTTP POST 请求"""
+    import urllib.request
+
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=data,
+        headers={"Content-Type": "application/json"},
+        method="POST"
+    )
+
+    with urllib.request.urlopen(req, timeout=timeout) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
 class TranslateSession:
-    """翻译会话管理（按 kb_id 隔离）"""
+    """翻译会话管理（按 kb_id 隔离，支持线程安全）"""
 
     _sessions: Dict[int, 'TranslateSession'] = {}
+    _lock = threading.Lock()
+    _cleanup_thread: Optional[threading.Thread] = None
+    _running = False
 
     def __init__(self, kb_id: int, km_api_url: str = KM_API_URL):
         self.kb_id = kb_id
         self.km_api_url = km_api_url
         self.conversation_id: Optional[str] = None
+        self.last_used: float = time.time()
 
     @classmethod
     def get_session(cls, kb_id: int, km_api_url: str = KM_API_URL) -> 'TranslateSession':
-        if kb_id not in cls._sessions:
-            cls._sessions[kb_id] = TranslateSession(kb_id, km_api_url)
-        return cls._sessions[kb_id]
+        with cls._lock:
+            if kb_id not in cls._sessions:
+                cls._sessions[kb_id] = TranslateSession(kb_id, km_api_url)
+                cls._ensure_cleanup_thread()
+            session = cls._sessions[kb_id]
+            session.last_used = time.time()
+            return session
+
+    @classmethod
+    def _ensure_cleanup_thread(cls):
+        if cls._cleanup_thread is None or not cls._cleanup_thread.is_alive():
+            cls._running = True
+            cls._cleanup_thread = threading.Thread(target=cls._cleanup_loop, daemon=True)
+            cls._cleanup_thread.start()
+
+    @classmethod
+    def _cleanup_loop(cls):
+        while cls._running:
+            time.sleep(60)
+            cls._cleanup_expired()
+
+    @classmethod
+    def _cleanup_expired(cls):
+        with cls._lock:
+            now = time.time()
+            expired = [kb_id for kb_id, session in cls._sessions.items()
+                      if now - session.last_used > SESSION_TIMEOUT_SECONDS]
+            for kb_id in expired:
+                del cls._sessions[kb_id]
+
+    @classmethod
+    def close_session(cls, kb_id: int):
+        with cls._lock:
+            if kb_id in cls._sessions:
+                cls._sessions[kb_id].conversation_id = None
 
     def translate(self, prompt: str) -> Dict[str, Any]:
         """执行翻译请求"""
-        import urllib.request
-
         payload: Dict[str, Any] = {"prompt": prompt, "kb_id": self.kb_id}
         if self.conversation_id:
             payload["conversation_id"] = self.conversation_id
 
-        data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(
-            self.km_api_url + "/llm/translate",
-            data=data,
-            headers={"Content-Type": "application/json"},
-            method="POST"
-        )
-
         try:
-            with urllib.request.urlopen(req, timeout=30) as response:
-                result = json.loads(response.read().decode("utf-8"))
+            result = _http_post(self.km_api_url + "/llm/translate", payload)
 
             if result.get("success") and result.get("data", {}).get("conversation_id"):
                 self.conversation_id = result["data"]["conversation_id"]
@@ -100,20 +144,7 @@ def translate_kb_name_strict(kb_name: str, kb_id: int = 0) -> Dict[str, Any]:
             session = TranslateSession.get_session(kb_id)
             result = session.translate(prompt)
         else:
-            import urllib.request
-            import urllib.parse
-
-            url = f"{KM_API_URL}/llm/translate"
-            data = json.dumps({"prompt": prompt}).encode("utf-8")
-            req = urllib.request.Request(
-                url,
-                data=data,
-                headers={"Content-Type": "application/json"},
-                method="POST"
-            )
-
-            with urllib.request.urlopen(req, timeout=30) as response:
-                result = json.loads(response.read().decode("utf-8"))
+            result = _http_post(f"{KM_API_URL}/llm/translate", {"prompt": prompt})
 
         if result.get("success"):
             raw_text = result.get("data", {}).get("content", "")
@@ -186,20 +217,7 @@ def translate_kb_name(kb_name: str, count: int = 3, kb_id: int = 0) -> Dict[str,
             session = TranslateSession.get_session(kb_id)
             result = session.translate(prompt)
         else:
-            import urllib.request
-            import urllib.parse
-
-            url = f"{KM_API_URL}/llm/translate"
-            data = json.dumps({"prompt": prompt}).encode("utf-8")
-            req = urllib.request.Request(
-                url,
-                data=data,
-                headers={"Content-Type": "application/json"},
-                method="POST"
-            )
-
-            with urllib.request.urlopen(req, timeout=30) as response:
-                result = json.loads(response.read().decode("utf-8"))
+            result = _http_post(f"{KM_API_URL}/llm/translate", {"prompt": prompt})
 
         if result.get("success"):
             raw_text = result.get("data", {}).get("content", "")
@@ -262,19 +280,7 @@ def generate_skill_name_candidates(kb_name: str, count: int = 3, kb_id: int = 0)
             session = TranslateSession.get_session(kb_id)
             result = session.translate(prompt)
         else:
-            import urllib.request
-
-            url = f"{KM_API_URL}/llm/translate"
-            data = json.dumps({"prompt": prompt}).encode("utf-8")
-            req = urllib.request.Request(
-                url,
-                data=data,
-                headers={"Content-Type": "application/json"},
-                method="POST"
-            )
-
-            with urllib.request.urlopen(req, timeout=30) as response:
-                result = json.loads(response.read().decode("utf-8"))
+            result = _http_post(f"{KM_API_URL}/llm/translate", {"prompt": prompt})
 
         if result.get("success"):
             raw_text = result.get("data", {}).get("content", "")
