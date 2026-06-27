@@ -1,0 +1,27 @@
+import { Request, Response, NextFunction } from 'express'
+import { recordCall } from '../services/statsStore'
+import { getClientIp } from '../utils'
+
+export function requestLogger(req: Request, res: Response, next: NextFunction) {
+  const start = Date.now()
+  const originalSend = res.send
+
+  res.send = function (body) {
+    const latency = Date.now() - start
+    if (req.apiKeyId) {
+      recordCall({
+        apiKeyId: req.apiKeyId,
+        kbId: req.kbId || '',
+        endpoint: req.path,
+        method: req.method,
+        statusCode: res.statusCode,
+        latencyMs: latency,
+        ip: getClientIp(req),
+        userAgent: req.headers['user-agent'] || '',
+      })
+    }
+    return originalSend.call(this, body)
+  }
+
+  next()
+}
