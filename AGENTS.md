@@ -1,16 +1,27 @@
 # KM-Portal AGENTS.md
 
 > 本文件是 KM-Portal 项目的 Agent 工作规范。
+> 最后更新: 2026-06-27
 
 ## 项目概述
 
 KM-Portal 是一个知识库运营管理平台，提供 Token 管理、知识库浏览、文档编辑、Skill 生成和 API 统计等功能。
 
+**GitHub**: https://github.com/tokyliu623/KM-Portal
+
+**相关项目**: KM-API (https://github.com/tokyliu623/KM-API)
+
 ## 技术栈
 
-- **前端**: React 18 + TypeScript + Vite + Ant Design + Zustand
-- **后端**: Express + TypeScript
-- **数据存储**: JSON 文件 (data/tokens.json, data/skills.json)
+| 层级 | 技术选型 |
+|------|----------|
+| 前端框架 | React 18 + TypeScript |
+| 构建工具 | Vite 5 |
+| UI 组件库 | Ant Design 5 |
+| 状态管理 | Zustand |
+| HTTP 客户端 | Axios |
+| 后端框架 | Express 4 + TypeScript |
+| 数据存储 | JSON 文件 |
 
 ## 项目结构
 
@@ -25,10 +36,13 @@ KM-Portal/
 │   │   │   ├── stats.ts           # 统计 API
 │   │   │   └── skill.ts           # Skill 生成 API
 │   │   ├── stores/                # Zustand 状态管理
-│   │   │   └── useTokenStore.ts   # Token 状态
+│   │   │   ├── useAuthStore.ts
+│   │   │   ├── useStatsStore.ts
+│   │   │   └── useTokenStore.ts
 │   │   ├── components/            # 公共组件
-│   │   │   ├── PageHeader.tsx
-│   │   │   └── Loading.tsx
+│   │   │   ├── Layout.tsx
+│   │   │   ├── Loading.tsx
+│   │   │   └── PageHeader.tsx
 │   │   └── pages/                 # 页面组件
 │   │       ├── Dashboard/         # 仪表盘
 │   │       ├── TokenManage/       # Token 管理
@@ -45,14 +59,35 @@ KM-Portal/
 │       │   ├── skill.ts           # Skill 生成
 │       │   └── diag.ts            # 诊断接口
 │       ├── services/              # 服务层
-│       │   └── tokenStore.ts      # Token 存储
+│       │   ├── tokenStore.ts      # Token 存储
+│       │   ├── statsStore.ts      # 统计存储
+│       │   ├── apiKeyStore.ts     # API Key 存储
+│       │   └── kmApiClient.ts     # KM API 客户端
 │       ├── middleware/            # 中间件
-│       └── types/                 # 类型定义
+│       │   ├── auth.ts            # 认证中间件
+│       │   ├── errorHandler.ts    # 错误处理
+│       │   └── logger.ts          # 日志中间件
+│       ├── types/                 # 类型定义
+│       └── utils/                 # 工具函数
+├── dist/                          # 预编译产物（已提交 git）
+│   ├── client/                    # 前端构建产物
+│   └── server/                    # 后端编译产物
 ├── data/                          # 数据存储目录
 │   ├── tokens.json
 │   ├── skills.json
 │   └── api-logs.json
-└── package.json
+├── docs/                          # 文档目录
+│   ├── DEPLOY-SERVER.md           # 服务器部署指南
+│   └── RELEASE-NOTES.md           # 版本记录
+├── package.json
+├── tsconfig.json
+├── tsconfig.server.json
+├── vite.config.ts
+├── deploy.sh                      # 传统部署脚本
+├── deploy-server.sh               # 服务器部署脚本
+├── deploy-docker.sh               # Docker 部署脚本
+├── nginx.conf.example             # Nginx 配置模板
+└── .env.example                   # 环境变量模板
 ```
 
 ## API 路由
@@ -150,12 +185,70 @@ interface GeneratedSkill {
 ```bash
 # 开发模式
 npm run dev          # 前后端同时启动
-npm run dev:client   # 仅前端
-npm run dev:server   # 仅后端
+npm run dev:client   # 仅前端 (Vite)
+npm run dev:server   # 仅后端 (tsx watch)
 
 # 构建
-npm run build        # 生产构建
-npm run lint         # 代码检查
+npm run build        # 生产构建（前端 + 后端）
+npm run build:client # 仅前端
+npm run build:server # 仅后端
+
+# 启动
+npm start            # 启动后端服务
+npm run serve        # 构建 + 启动
+
+# 代码质量
+npm run lint         # ESLint 检查
+npm run format       # Prettier 格式化
+```
+
+## 服务器部署
+
+### 部署方式
+
+采用**本地预编译 + 服务器运行**模式：
+- 本地编译后，`dist/` 目录提交到 git
+- 服务器直接运行预编译代码，无需编译
+
+### 部署命令
+
+```bash
+cd /data/KM-Portal
+git pull origin master
+npm install --production
+PORT=5053 nohup npm start > server.log 2>&1 &
+sleep 3
+curl http://localhost:5053/api/health
+```
+
+### 一键部署脚本
+
+```bash
+chmod +x deploy-server.sh && ./deploy-server.sh
+```
+
+## 运维信息
+
+### 服务端口
+
+| 服务 | 端口 | 说明 |
+|------|------|------|
+| 后端 API | 5053 | Express 服务 |
+| 前端 | 静态托管 | 通过 Nginx |
+
+### 数据文件
+
+```
+data/
+├── tokens.json      # Token 存储
+├── skills.json      # Skill 存储
+└── api-logs.json    # API 调用日志
+```
+
+### 日志文件
+
+```
+server.log           # 服务运行日志
 ```
 
 ## 类型安全规则
@@ -177,3 +270,25 @@ perf: 性能优化
 test: 测试
 chore: 构建/工具
 ```
+
+## 版本历史
+
+| 版本 | 日期 | 变更 |
+|------|------|------|
+| 1.4.0 | 2026-06-27 | 新增服务器部署脚本 |
+| 1.3.0 | 2026-06-27 | 修复 GLIBC 兼容性问题，添加 dist/ 到 git |
+| 1.2.0 | 2026-06-27 | 添加 Docker 部署支持 |
+| 1.1.0 | 2026-06-27 | 添加部署配置和脚本 |
+| 1.0.0 | 2026-06-27 | 项目初始化，完成核心功能 |
+
+## 已知问题
+
+1. **服务器 GLIBC 版本限制**: 当前服务器 GLIBC 版本过低（< 2.25），无法运行标准 Node.js 二进制文件。解决方案是使用本地预编译 + 服务器运行模式。
+
+## 待办事项
+
+- [ ] 服务器部署验证
+- [ ] 权限控制完善
+- [ ] Skill 生成器优化
+- [ ] 单元测试添加
+- [ ] E2E 测试添加
