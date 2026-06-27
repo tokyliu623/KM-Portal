@@ -1,0 +1,150 @@
+import { Table, Button, Space, Tag, message, Form, Input, Select, Popconfirm } from 'antd'
+import { PageHeader } from '../../components/PageHeader'
+import { Loading } from '../../components/Loading'
+import { useTokenStore } from '../../stores/useTokenStore'
+import { useEffect } from 'react'
+import { adminApi } from '../../services/admin'
+
+export function TokenManage() {
+  const { tokens, loading, setTokens, setLoading } = useTokenStore()
+  const [form] = Form.useForm()
+
+  useEffect(() => {
+    loadTokens()
+  }, [])
+
+  const loadTokens = () => {
+    setLoading(true)
+    adminApi.listTokens()
+      .then((res) => {
+        if (res.success && res.data) {
+          setTokens(res.data)
+        }
+      })
+      .catch(() => message.error('加载失败'))
+      .finally(() => setLoading(false))
+  }
+
+  const handleRevoke = async (id: string) => {
+    try {
+      await adminApi.revokeToken(id)
+      message.success('撤销成功')
+      loadTokens()
+    } catch {
+      message.error('撤销失败')
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    try {
+      await adminApi.deleteToken(id)
+      message.success('删除成功')
+      loadTokens()
+    } catch {
+      message.error('删除失败')
+    }
+  }
+
+  const handleAdd = async () => {
+    try {
+      const values = await form.validateFields()
+      await adminApi.createToken({
+        kb_id: Number(values.kb_id),
+        kb_name: values.kb_name,
+        token: values.token,
+        owner: values.owner,
+        permission: values.permission || 'read',
+        expiresAt: values.expiresAt,
+      })
+      message.success('添加成功')
+      form.resetFields()
+      loadTokens()
+    } catch {
+      message.error('添加失败')
+    }
+  }
+
+  const columns = [
+    { title: '知识库', dataIndex: 'kb_name', key: 'kb_name' },
+    { title: 'KB ID', dataIndex: 'kb_id', key: 'kb_id', render: (id: number) => id },
+    { title: '所有者', dataIndex: 'owner', key: 'owner' },
+    {
+      title: '权限',
+      dataIndex: 'permission',
+      key: 'permission',
+      render: (perm: string) => (
+        <Tag color={perm === 'write' ? 'blue' : 'green'}>
+          {perm === 'write' ? '编辑' : '查询'}
+        </Tag>
+      ),
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => (
+        <Tag color={status === 'active' ? 'green' : 'red'}>
+          {status === 'active' ? '有效' : '已撤销'}
+        </Tag>
+      ),
+    },
+    {
+      title: '过期时间',
+      dataIndex: 'expiresAt',
+      key: 'expiresAt',
+      render: (date: string) => new Date(date).toLocaleDateString(),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      render: (_: any, record: any) => (
+        <Space>
+          {record.status === 'active' && (
+            <Popconfirm
+              title="确定撤销此 Token？"
+              onConfirm={() => handleRevoke(record.id)}
+            >
+              <Button size="small" danger>撤销</Button>
+            </Popconfirm>
+          )}
+          <Popconfirm
+            title="确定删除此 Token？"
+            onConfirm={() => handleDelete(record.id)}
+          >
+            <Button size="small" type="link" danger>删除</Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ]
+
+  return (
+    <div>
+      <PageHeader title="Token 管理" subTitle="管理知识库访问凭证" />
+      <div style={{ marginBottom: 16 }}>
+        <Button type="primary" onClick={() => form.submit()}>添加 Token</Button>
+      </div>
+      <Form form={form} layout="inline" onFinish={handleAdd} style={{ marginBottom: 16 }}>
+        <Form.Item name="kb_name" label="知识库名称" rules={[{ required: true }]}>
+          <Input placeholder="知识库名称" />
+        </Form.Item>
+        <Form.Item name="kb_id" label="KB ID" rules={[{ required: true, type: 'number' }]}>
+          <Input type="number" placeholder="KB ID" />
+        </Form.Item>
+        <Form.Item name="token" label="Token" rules={[{ required: true }]}>
+          <Input placeholder="KM Token" />
+        </Form.Item>
+        <Form.Item name="owner" label="所有者" rules={[{ required: true }]}>
+          <Input placeholder="工号" />
+        </Form.Item>
+        <Form.Item name="permission" label="权限" initialValue="read">
+          <Select style={{ width: 120 }}>
+            <Select.Option value="read">查询</Select.Option>
+            <Select.Option value="write">编辑</Select.Option>
+          </Select>
+        </Form.Item>
+      </Form>
+      <Table columns={columns} dataSource={tokens} rowKey="id" loading={loading} />
+    </div>
+  )
+}

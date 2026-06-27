@@ -36,7 +36,11 @@ router.post('/tokens', async (req, res) => {
 router.put('/tokens/:id', async (req, res) => {
   try {
     const { id } = req.params
-    const updated = await tokenStore.update(id, req.body)
+    const allowedFields = ['kb_name', 'token', 'owner', 'permission', 'status', 'expiresAt']
+    const updateData = Object.keys(req.body)
+      .filter((key) => allowedFields.includes(key))
+      .reduce((acc, key) => ({ ...acc, [key]: req.body[key] }), {})
+    const updated = await tokenStore.update(id, updateData)
     if (!updated) {
       return res.status(404).json({ success: false, error: 'Token not found' })
     }

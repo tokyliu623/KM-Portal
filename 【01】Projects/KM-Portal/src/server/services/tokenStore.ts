@@ -39,10 +39,14 @@ async function writeStore(store: TokenStore): Promise<void> {
 export const tokenStore = {
   async create(data: Omit<KMToken, 'id' | 'createdAt' | 'updatedAt'>): Promise<KMToken> {
     const store = await readStore()
+    const kbIdNum = Number(data.kb_id)
+    if (isNaN(kbIdNum)) {
+      throw new Error('Invalid kb_id: must be a number')
+    }
     const token: KMToken = {
       ...data,
       id: uuidv4(),
-      kb_id: Number(data.kb_id),
+      kb_id: kbIdNum,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
