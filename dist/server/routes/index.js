@@ -1,0 +1,14 @@
+import { Router } from 'express';
+import adminRouter from './admin';
+import kbRouter from './kb';
+import statsRouter from './stats';
+import skillRouter from './skill';
+import diagRouter from './diag';
+const router = Router();
+router.use(adminRouter);
+router.use(kbRouter);
+router.use(statsRouter);
+router.use(skillRouter);
+router.use('/diag', diagRouter);
+export default router;
+//# sourceMappingURL=index.js.map

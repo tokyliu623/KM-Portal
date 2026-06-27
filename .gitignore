@@ -1,5 +1,6 @@
 node_modules/
-dist/
+# dist/ 目录需要提交到 git，用于服务器直接运行预编译代码
+# dist/
 *.log
 .DS_Store
 .env
