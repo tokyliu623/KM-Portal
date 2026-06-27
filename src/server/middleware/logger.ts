@@ -2,7 +2,12 @@ import { Request, Response, NextFunction } from 'express'
 import { recordCall } from '../services/statsStore'
 import { getClientIp } from '../utils'
 
-export function requestLogger(req: Request, res: Response, next: NextFunction) {
+interface LogRequest extends Request {
+  apiKeyId?: string
+  kbId?: string
+}
+
+export function requestLogger(req: LogRequest, res: Response, next: NextFunction) {
   const start = Date.now()
   const originalSend = res.send
 

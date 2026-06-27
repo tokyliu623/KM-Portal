@@ -21,6 +21,6 @@ export class KmApiClient {
       throw new Error(`API request failed: ${response.statusText}`);
     }
 
-    return response.json();
+    return response.json() as Promise<T>;
   }
 }
