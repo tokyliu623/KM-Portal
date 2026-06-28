@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { tokenStore } from '../services/tokenStore';
+import { tokenStore } from '../services/tokenStore.js';
 const router = Router();
 router.get('/tokens', async (_req, res) => {
     try {

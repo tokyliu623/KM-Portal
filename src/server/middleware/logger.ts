@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
-import { recordCall } from '../services/statsStore'
-import { getClientIp } from '../utils'
+import { recordCall } from '../services/statsStore.js'
+import { getClientIp } from '../utils/index.js'
 
 interface LogRequest extends Request {
   apiKeyId?: string

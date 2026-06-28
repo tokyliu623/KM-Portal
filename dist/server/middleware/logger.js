@@ -1,5 +1,5 @@
-import { recordCall } from '../services/statsStore';
-import { getClientIp } from '../utils';
+import { recordCall } from '../services/statsStore.js';
+import { getClientIp } from '../utils/index.js';
 export function requestLogger(req, res, next) {
     const start = Date.now();
     const originalSend = res.send;

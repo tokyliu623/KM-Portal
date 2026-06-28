@@ -1,8 +1,8 @@
 import express from 'express';
 import cors from 'cors';
-import router from './routes';
-import { errorHandler } from './middleware/errorHandler';
-import { requestLogger } from './middleware/logger';
+import router from './routes/index.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import { requestLogger } from './middleware/logger.js';
 const app = express();
 const PORT = process.env.PORT || 5053;
 app.use(cors());
