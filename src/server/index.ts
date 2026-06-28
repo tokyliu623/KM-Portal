@@ -11,8 +11,6 @@ app.use(cors())
 app.use(express.json())
 app.use(requestLogger)
 
-app.use('/api', router)
-
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -21,6 +19,8 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
   })
 })
+
+app.use('/api', router)
 
 app.use(errorHandler)
 
