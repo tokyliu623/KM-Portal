@@ -10,10 +10,13 @@ export function Dashboard() {
 
   useEffect(() => {
     setLoading(true)
-    statsApi.getSummary()
+    statsApi.getOverview()
       .then((res) => {
-        if (res.code === 1) {
-          setStats(res.data.last7Days, res.data.last30Days)
+        if (res.success && res.data) {
+          setStats(
+            { total: res.data.totalCalls, avgLatency: 0 },
+            { total: res.data.totalCalls, avgLatency: 0 }
+          )
         }
       })
       .finally(() => setLoading(false))
