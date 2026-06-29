@@ -1,13 +1,21 @@
-declare const fs: any;
-declare const path: any;
-declare const uuidv4: any;
-declare const DATA_DIR: any;
-declare const STATS_FILE: any;
-declare function recordCall(data: any): Promise<void>;
-declare function getStats(kbId: any, days?: number): Promise<{
-    total: any;
-    byDay: {};
-    byEndpoint: {};
+interface ApiCallRecord {
+    id: string;
+    apiKeyId: string;
+    kbId: string;
+    endpoint: string;
+    method: string;
+    statusCode: number;
+    latencyMs: number;
+    ip: string;
+    userAgent: string;
+    createdAt: string;
+}
+export declare function recordCall(data: Omit<ApiCallRecord, 'id' | 'createdAt'>): Promise<void>;
+export declare function getStats(kbId?: string, days?: number): Promise<{
+    total: number;
+    byDay: Record<string, number>;
+    byEndpoint: Record<string, number>;
     avgLatency: number;
 }>;
+export {};
 //# sourceMappingURL=statsStore.d.ts.map

@@ -10,13 +10,15 @@
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
     "build:server": "tsc -p tsconfig.server.json",
+    "build:server:cjs": "node scripts/build-server.cjs",
+    "build:all": "npm run build:client && npm run build:server && npm run build:server:cjs",
+    "pkg:linux": "pkg dist/server-bundle/index.js --targets node18-linux-x64 --output dist/km-portal-linux",
+    "pkg:all": "npm run build:all && npm run pkg:linux",
     "preview": "vite preview",
     "start": "node dist/server/index.js",
     "serve": "npm run build && npm start",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "build:server:cjs": "node scripts/build-server.cjs",
-    "pkg:linux": "pkg dist/server-bundle/index.js --targets node18-linux-x64 --output dist/km-portal-linux"
+    "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
     "@ant-design/icons": "^5.2.6",

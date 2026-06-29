@@ -1,2 +1,3 @@
-declare function errorHandler(err: any, _req: any, res: any, _next: any): void;
+import { Request, Response, NextFunction } from 'express';
+export declare function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction): void;
 //# sourceMappingURL=errorHandler.d.ts.map

@@ -1,12 +1,13 @@
 import express from 'express'
 import cors from 'cors'
 import path from 'path'
-import { fileURLToPath } from 'url'
 import router from './routes/index.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { requestLogger } from './middleware/logger.js'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const __dirname = path.resolve()
+const STATIC_DIR = path.join(__dirname, 'client')
+const INDEX_FILE = path.join(__dirname, 'client/index.html')
 
 const app = express()
 const PORT = process.env.PORT || 5053
@@ -26,10 +27,10 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api', router)
 
-app.use(express.static(path.join(__dirname, '../client')))
+app.use(express.static(STATIC_DIR))
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/index.html'))
+  res.sendFile(INDEX_FILE)
 })
 
 app.use(errorHandler)

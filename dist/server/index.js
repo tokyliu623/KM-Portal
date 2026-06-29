@@ -1,10 +1,12 @@
-"use strict";
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const router = require('./routes/index');
-const { errorHandler } = require('./middleware/errorHandler');
-const { requestLogger } = require('./middleware/logger');
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import router from './routes/index.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import { requestLogger } from './middleware/logger.js';
+const __dirname = path.resolve();
+const STATIC_DIR = path.join(__dirname, 'client');
+const INDEX_FILE = path.join(__dirname, 'client/index.html');
 const app = express();
 const PORT = process.env.PORT || 5053;
 app.use(cors());
@@ -19,13 +21,12 @@ app.get('/api/health', (req, res) => {
     });
 });
 app.use('/api', router);
-app.use(express.static(path.join(__dirname, '../client')));
+app.use(express.static(STATIC_DIR));
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/index.html'));
+    res.sendFile(INDEX_FILE);
 });
 app.use(errorHandler);
 app.listen(PORT, () => {
     console.log(`KM-Portal server running on port ${PORT}`);
     console.log(`Health check: http://localhost:${PORT}/api/health`);
 });
-//# sourceMappingURL=index.js.map

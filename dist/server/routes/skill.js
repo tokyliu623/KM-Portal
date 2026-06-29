@@ -1,8 +1,7 @@
-"use strict";
-const { Router } = require('express');
-const fs = require('fs');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+import { Router } from 'express';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 const router = Router();
 const DATA_DIR = path.join(process.cwd(), 'data');
 const SKILLS_FILE = path.join(DATA_DIR, 'skills.json');
@@ -162,5 +161,4 @@ router.get('/:id/export', async (req, res) => {
         res.status(500).json({ error: 'Failed to export skill' });
     }
 });
-module.exports = router;
-//# sourceMappingURL=skill.js.map
+export default router;

@@ -1,7 +1,6 @@
-"use strict";
-const { recordCall } = require('../services/statsStore');
-const { getClientIp } = require('../utils/index');
-function requestLogger(req, res, next) {
+import { recordCall } from '../services/statsStore.js';
+import { getClientIp } from '../utils/index.js';
+export function requestLogger(req, res, next) {
     const start = Date.now();
     const originalSend = res.send;
     res.send = function (body) {
@@ -22,5 +21,3 @@ function requestLogger(req, res, next) {
     };
     next();
 }
-module.exports = { requestLogger };
-//# sourceMappingURL=logger.js.map

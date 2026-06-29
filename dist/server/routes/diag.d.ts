@@ -1,4 +1,3 @@
-declare const Router: any;
-declare const tokenStore: any;
-declare const router: any;
+declare const router: import("express-serve-static-core").Router;
+export default router;
 //# sourceMappingURL=diag.d.ts.map

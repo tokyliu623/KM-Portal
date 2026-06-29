@@ -1,15 +1,13 @@
-"use strict";
-const { Router } = require('express');
-const adminRouter = require('./admin');
-const kbRouter = require('./kb');
-const statsRouter = require('./stats');
-const skillRouter = require('./skill');
-const diagRouter = require('./diag');
+import { Router } from 'express';
+import adminRouter from './admin';
+import kbRouter from './kb';
+import statsRouter from './stats';
+import skillRouter from './skill';
+import diagRouter from './diag';
 const router = Router();
 router.use(adminRouter);
 router.use(kbRouter);
 router.use(statsRouter);
 router.use(skillRouter);
 router.use('/diag', diagRouter);
-module.exports = router;
-//# sourceMappingURL=index.js.map
+export default router;

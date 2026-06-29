@@ -7,13 +7,10 @@ esbuild.build({
   platform: 'node',
   target: 'node18',
   outfile: 'dist/server-bundle/index.js',
-  format: 'esm',
+  format: 'cjs',
   external: [],
   sourcemap: false,
   minify: false,
-  banner: {
-    js: 'import { createRequire as __createRequire } from "module";const require = __createRequire(import.meta.url);',
-  },
 }).then(() => {
   console.log('Server bundle created successfully!');
 }).catch((error) => {

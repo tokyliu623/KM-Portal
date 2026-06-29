@@ -1,9 +1,14 @@
-declare const Router: any;
-declare const fs: any;
-declare const path: any;
-declare const uuidv4: any;
-declare const router: any;
-declare const DATA_DIR: any;
-declare const SKILLS_FILE: any;
-declare function generateSkillContent(name: string, kbId: number, kbName: string, permission: 'read' | 'write'): string;
+declare const router: import("express-serve-static-core").Router;
+export interface GeneratedSkill {
+    id: string;
+    name: string;
+    description: string;
+    kbId: number;
+    kbName: string;
+    permission: 'read' | 'write';
+    content: string;
+    createdAt: string;
+    updatedAt: string;
+}
+export default router;
 //# sourceMappingURL=skill.d.ts.map
