@@ -1,6 +1,7 @@
-import { Router } from 'express';
-import { promises as fs } from 'fs';
-import path from 'path';
+"use strict";
+const { Router } = require('express');
+const fs = require('fs');
+const path = require('path');
 const router = Router();
 const DATA_DIR = path.join(process.cwd(), 'data');
 const LOGS_FILE = path.join(DATA_DIR, 'api-logs.json');
@@ -89,5 +90,5 @@ router.get('/endpoints', async (_req, res) => {
         res.status(500).json({ error: 'Failed to fetch endpoint stats' });
     }
 });
-export default router;
+module.exports = router;
 //# sourceMappingURL=stats.js.map

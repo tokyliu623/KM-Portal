@@ -1,22 +1,15 @@
-export interface KMToken {
-    id: string;
-    kb_id: number;
-    kb_name: string;
-    token: string;
-    owner: string;
-    permission: 'read' | 'write';
-    status: 'active' | 'revoked';
-    expiresAt: string;
-    createdAt: string;
-    updatedAt: string;
-}
-export declare const tokenStore: {
-    create(data: Omit<KMToken, "id" | "createdAt" | "updatedAt">): Promise<KMToken>;
-    findAll(): Promise<KMToken[]>;
-    findByKbId(kbId: number | string): Promise<KMToken | undefined>;
-    findById(id: string): Promise<KMToken | undefined>;
-    update(id: string, data: Partial<KMToken>): Promise<KMToken | undefined>;
-    revoke(id: string): Promise<boolean>;
-    delete(id: string): Promise<boolean>;
+declare const fs: any;
+declare const path: any;
+declare const uuidv4: any;
+declare const DATA_DIR: any;
+declare const TOKENS_FILE: any;
+declare const tokenStore: {
+    create(data: any): Promise<any>;
+    findAll(): Promise<any>;
+    findByKbId(kbId: any): Promise<any>;
+    findById(id: any): Promise<any>;
+    update(id: any, data: any): Promise<any>;
+    revoke(id: any): Promise<boolean>;
+    delete(id: any): Promise<boolean>;
 };
 //# sourceMappingURL=tokenStore.d.ts.map

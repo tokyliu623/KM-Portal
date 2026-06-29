@@ -1,14 +1,15 @@
-import { Router } from 'express';
-import adminRouter from './admin.js';
-import kbRouter from './kb.js';
-import statsRouter from './stats.js';
-import skillRouter from './skill.js';
-import diagRouter from './diag.js';
+"use strict";
+const { Router } = require('express');
+const adminRouter = require('./admin');
+const kbRouter = require('./kb');
+const statsRouter = require('./stats');
+const skillRouter = require('./skill');
+const diagRouter = require('./diag');
 const router = Router();
 router.use(adminRouter);
 router.use(kbRouter);
 router.use(statsRouter);
 router.use(skillRouter);
 router.use('/diag', diagRouter);
-export default router;
+module.exports = router;
 //# sourceMappingURL=index.js.map

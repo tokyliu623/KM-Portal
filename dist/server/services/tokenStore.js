@@ -1,6 +1,7 @@
-import { promises as fs } from 'fs';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+"use strict";
+const fs = require('fs');
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 const DATA_DIR = path.join(process.cwd(), 'data');
 const TOKENS_FILE = path.join(DATA_DIR, 'tokens.json');
 async function readStore() {
@@ -16,7 +17,7 @@ async function writeStore(store) {
     await fs.mkdir(DATA_DIR, { recursive: true });
     await fs.writeFile(TOKENS_FILE, JSON.stringify(store, null, 2), 'utf-8');
 }
-export const tokenStore = {
+const tokenStore = {
     async create(data) {
         const store = await readStore();
         const kbIdNum = Number(data.kb_id);
@@ -80,4 +81,5 @@ export const tokenStore = {
         return true;
     },
 };
+module.exports = { tokenStore };
 //# sourceMappingURL=tokenStore.js.map

@@ -1,8 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
-interface LogRequest extends Request {
-    apiKeyId?: string;
-    kbId?: string;
-}
-export declare function requestLogger(req: LogRequest, res: Response, next: NextFunction): void;
-export {};
+declare const recordCall: any;
+declare const getClientIp: any;
+declare function requestLogger(req: any, res: any, next: any): void;
 //# sourceMappingURL=logger.d.ts.map

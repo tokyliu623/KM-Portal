@@ -1,4 +1,7 @@
-export class KmApiClient {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.KmApiClient = void 0;
+class KmApiClient {
     constructor(baseUrl, apiKey) {
         this.baseUrl = baseUrl;
         this.apiKey = apiKey;
@@ -18,4 +21,5 @@ export class KmApiClient {
         return response.json();
     }
 }
+exports.KmApiClient = KmApiClient;
 //# sourceMappingURL=kmApiClient.js.map

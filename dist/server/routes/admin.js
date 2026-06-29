@@ -1,5 +1,6 @@
-import { Router } from 'express';
-import { tokenStore } from '../services/tokenStore.js';
+"use strict";
+const { Router } = require('express');
+const { tokenStore } = require('../services/tokenStore');
 const router = Router();
 router.get('/tokens', async (_req, res) => {
     try {
@@ -74,5 +75,5 @@ router.delete('/tokens/:id', async (req, res) => {
         res.status(500).json({ success: false, error: 'Failed to delete token' });
     }
 });
-export default router;
+module.exports = router;
 //# sourceMappingURL=admin.js.map

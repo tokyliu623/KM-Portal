@@ -1,5 +1,6 @@
-import { Router } from 'express';
-import { tokenStore } from '../services/tokenStore.js';
+"use strict";
+const { Router } = require('express');
+const { tokenStore } = require('../services/tokenStore');
 const router = Router();
 router.get('/health', (_req, res) => {
     res.json({
@@ -64,5 +65,5 @@ router.post('/verify', async (req, res) => {
         res.status(500).json({ error: 'Verification failed' });
     }
 });
-export default router;
+module.exports = router;
 //# sourceMappingURL=diag.js.map

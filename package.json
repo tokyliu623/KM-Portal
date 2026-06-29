@@ -15,7 +15,8 @@
     "serve": "npm run build && npm start",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "pkg": "pkg dist/server/index.js --targets node18-alpine-arm64,node18-alpine-x64 --output dist/km-portal"
+    "build:server:cjs": "node scripts/build-server.cjs",
+    "pkg:linux": "pkg dist/server-bundle/index.js --targets node18-linux-x64 --output dist/km-portal-linux"
   },
   "dependencies": {
     "@ant-design/icons": "^5.2.6",
@@ -39,6 +40,7 @@
     "@typescript-eslint/parser": "^7.0.0",
     "@vitejs/plugin-react": "^4.2.1",
     "concurrently": "^8.2.2",
+    "esbuild": "^0.28.1",
     "eslint": "^8.56.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",

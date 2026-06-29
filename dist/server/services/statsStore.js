@@ -1,6 +1,7 @@
-import { promises as fs } from 'fs';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+"use strict";
+const fs = require('fs');
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 const DATA_DIR = path.join(process.cwd(), 'data');
 const STATS_FILE = path.join(DATA_DIR, 'api-stats.json');
 async function readStore() {
@@ -16,7 +17,7 @@ async function writeStore(store) {
     await fs.mkdir(DATA_DIR, { recursive: true });
     await fs.writeFile(STATS_FILE, JSON.stringify(store, null, 2), 'utf-8');
 }
-export async function recordCall(data) {
+async function recordCall(data) {
     const store = await readStore();
     store.calls.push({
         ...data,
@@ -28,7 +29,7 @@ export async function recordCall(data) {
     }
     await writeStore(store);
 }
-export async function getStats(kbId, days = 7) {
+async function getStats(kbId, days = 7) {
     const store = await readStore();
     const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
     const calls = store.calls.filter((c) => new Date(c.createdAt).getTime() > cutoff && (!kbId || c.kbId === kbId));
@@ -48,4 +49,5 @@ export async function getStats(kbId, days = 7) {
         avgLatency: calls.length > 0 ? Math.round(totalLatency / calls.length) : 0,
     };
 }
+module.exports = { recordCall, getStats };
 //# sourceMappingURL=statsStore.js.map

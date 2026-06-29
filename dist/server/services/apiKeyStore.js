@@ -1,6 +1,7 @@
-import { v4 as uuidv4 } from 'uuid';
+"use strict";
+const { v4: uuidv4 } = require('uuid');
 const keys = new Map();
-export const apiKeyStore = {
+const apiKeyStore = {
     create(name, key) {
         const apiKey = {
             id: uuidv4(),
@@ -27,4 +28,5 @@ export const apiKeyStore = {
         }
     },
 };
+module.exports = { apiKeyStore };
 //# sourceMappingURL=apiKeyStore.js.map

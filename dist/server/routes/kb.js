@@ -1,5 +1,6 @@
-import { Router } from 'express';
-import { tokenStore } from '../services/tokenStore.js';
+"use strict";
+const { Router } = require('express');
+const { tokenStore } = require('../services/tokenStore');
 const router = Router();
 async function verifyToken(req, res, requiredPermission = 'read') {
     const kbId = req.params.kbId || req.body.kb_id;
@@ -96,5 +97,5 @@ router.get('/:kbId/documents', async (req, res) => {
         message: 'Documents listed successfully',
     });
 });
-export default router;
+module.exports = router;
 //# sourceMappingURL=kb.js.map
