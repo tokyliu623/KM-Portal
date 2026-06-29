@@ -8,7 +8,7 @@ echo "=== KM-Portal Docker 部署开始 ==="
 echo "时间: $(date '+%Y-%m-%d %H:%M:%S')"
 
 echo ">>> 拉取最新代码..."
-git pull origin master
+git pull origin main
 
 echo ">>> 构建 Docker 镜像..."
 docker build -t km-portal .
