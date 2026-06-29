@@ -1,7 +1,11 @@
 import express from 'express'
 import cors from 'cors'
 import path from 'path'
-import router from './routes/index.js'
+import adminRouter from './routes/admin.js'
+import kbRouter from './routes/kb.js'
+import statsRouter from './routes/stats.js'
+import skillRouter from './routes/skill.js'
+import diagRouter from './routes/diag.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { requestLogger } from './middleware/logger.js'
 
@@ -25,7 +29,11 @@ app.get('/api/health', (req, res) => {
   })
 })
 
-app.use('/api', router)
+app.use('/api/admin', adminRouter)
+app.use('/api/skill', skillRouter)
+app.use('/api/kb', kbRouter)
+app.use('/api/stats', statsRouter)
+app.use('/api/diag', diagRouter)
 
 app.use(express.static(STATIC_DIR))
 

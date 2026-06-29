@@ -18856,17 +18856,17 @@ var require_router = __commonJS({
     var toString = Object.prototype.toString;
     var proto = module2.exports = function(options) {
       var opts = options || {};
-      function router7(req, res, next) {
-        router7.handle(req, res, next);
+      function router6(req, res, next) {
+        router6.handle(req, res, next);
       }
-      setPrototypeOf(router7, proto);
-      router7.params = {};
-      router7._params = [];
-      router7.caseSensitive = opts.caseSensitive;
-      router7.mergeParams = opts.mergeParams;
-      router7.strict = opts.strict;
-      router7.stack = [];
-      return router7;
+      setPrototypeOf(router6, proto);
+      router6.params = {};
+      router6._params = [];
+      router6.caseSensitive = opts.caseSensitive;
+      router6.mergeParams = opts.mergeParams;
+      router6.strict = opts.strict;
+      router6.stack = [];
+      return router6;
     };
     proto.param = function param(name, fn) {
       if (typeof name === "function") {
@@ -21883,7 +21883,7 @@ var require_application = __commonJS({
   "node_modules/express/lib/application.js"(exports2, module2) {
     "use strict";
     var finalhandler = require_finalhandler();
-    var Router7 = require_router();
+    var Router6 = require_router();
     var methods = require_methods();
     var middleware = require_init();
     var query = require_query();
@@ -21948,7 +21948,7 @@ var require_application = __commonJS({
     };
     app2.lazyrouter = function lazyrouter() {
       if (!this._router) {
-        this._router = new Router7({
+        this._router = new Router6({
           caseSensitive: this.enabled("case sensitive routing"),
           strict: this.enabled("strict routing")
         });
@@ -21957,17 +21957,17 @@ var require_application = __commonJS({
       }
     };
     app2.handle = function handle(req, res, callback) {
-      var router7 = this._router;
+      var router6 = this._router;
       var done = callback || finalhandler(req, res, {
         env: this.get("env"),
         onerror: logerror.bind(this)
       });
-      if (!router7) {
+      if (!router6) {
         debug("no routes defined on app");
         done();
         return;
       }
-      router7.handle(req, res, done);
+      router6.handle(req, res, done);
     };
     app2.use = function use(fn) {
       var offset = 0;
@@ -21987,15 +21987,15 @@ var require_application = __commonJS({
         throw new TypeError("app.use() requires a middleware function");
       }
       this.lazyrouter();
-      var router7 = this._router;
+      var router6 = this._router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router7.use(path6, fn2);
+          return router6.use(path6, fn2);
         }
         debug(".use app under %s", path6);
         fn2.mountpath = path6;
         fn2.parent = this;
-        router7.use(path6, function mounted_app(req, res, next) {
+        router6.use(path6, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             setPrototypeOf(req, orig.request);
@@ -23812,7 +23812,7 @@ var require_express = __commonJS({
     var mixin = require_merge_descriptors();
     var proto = require_application();
     var Route = require_route();
-    var Router7 = require_router();
+    var Router6 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -23835,7 +23835,7 @@ var require_express = __commonJS({
     exports2.request = req;
     exports2.response = res;
     exports2.Route = Route;
-    exports2.Router = Router7;
+    exports2.Router = Router6;
     exports2.json = bodyParser.json;
     exports2.query = require_query();
     exports2.raw = bodyParser.raw;
@@ -24159,12 +24159,9 @@ var require_lib3 = __commonJS({
 });
 
 // src/server/index.ts
-var import_express7 = __toESM(require_express2(), 1);
+var import_express6 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 var import_path5 = __toESM(require("path"), 1);
-
-// src/server/routes/index.ts
-var import_express6 = __toESM(require_express2(), 1);
 
 // src/server/routes/admin.ts
 var import_express = __toESM(require_express2(), 1);
@@ -24777,15 +24774,6 @@ router5.post("/verify", async (req, res) => {
 });
 var diag_default = router5;
 
-// src/server/routes/index.ts
-var router6 = (0, import_express6.Router)();
-router6.use(admin_default);
-router6.use(skill_default);
-router6.use(kb_default);
-router6.use(stats_default);
-router6.use("/diag", diag_default);
-var routes_default = router6;
-
 // src/server/middleware/errorHandler.ts
 function errorHandler(err, _req, res, _next) {
   console.error("Error:", err.message);
@@ -24854,10 +24842,10 @@ function requestLogger(req, res, next) {
 var __dirname = import_path5.default.resolve();
 var STATIC_DIR = import_path5.default.join(__dirname, "dist/client");
 var INDEX_FILE = import_path5.default.join(__dirname, "dist/client/index.html");
-var app = (0, import_express7.default)();
+var app = (0, import_express6.default)();
 var PORT = process.env.PORT || 5053;
 app.use((0, import_cors.default)());
-app.use(import_express7.default.json());
+app.use(import_express6.default.json());
 app.use(requestLogger);
 app.get("/api/health", (req, res) => {
   res.json({
@@ -24867,8 +24855,12 @@ app.get("/api/health", (req, res) => {
     timestamp: (/* @__PURE__ */ new Date()).toISOString()
   });
 });
-app.use("/api", routes_default);
-app.use(import_express7.default.static(STATIC_DIR));
+app.use("/api/admin", admin_default);
+app.use("/api/skill", skill_default);
+app.use("/api/kb", kb_default);
+app.use("/api/stats", stats_default);
+app.use("/api/diag", diag_default);
+app.use(import_express6.default.static(STATIC_DIR));
 app.get("*", (req, res) => {
   res.sendFile(INDEX_FILE);
 });
