@@ -24780,9 +24780,9 @@ var diag_default = router5;
 // src/server/routes/index.ts
 var router6 = (0, import_express6.Router)();
 router6.use(admin_default);
+router6.use(skill_default);
 router6.use(kb_default);
 router6.use(stats_default);
-router6.use(skill_default);
 router6.use("/diag", diag_default);
 var routes_default = router6;
 
