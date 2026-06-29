@@ -29,13 +29,14 @@ export function Dashboard() {
         if (daily30Res.success && daily30Res.data) {
           setStats(last7Days, daily30Res.data)
         }
-      } catch (err: any) {
-        message.error(`加载失败: ${err.message}`)
+      } catch (err: unknown) {
+        message.error(`加载失败: ${err instanceof Error ? err.message : '未知错误'}`)
       } finally {
         setLoading(false)
       }
     }
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   if (loading) return <Loading />

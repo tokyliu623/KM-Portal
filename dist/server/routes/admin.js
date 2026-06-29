@@ -40,18 +40,18 @@ router.post('/tokens', async (req, res) => {
 router.put('/tokens/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { kb_id, kb_name, token, owner, permission, status, expiresAt } = req.body;
-        if (kb_id !== undefined && (isNaN(Number(kb_id)) || Number(kb_id) <= 0)) {
+        const { kb_id: _kb_id, token: _token, ...updateData } = req.body;
+        if (_kb_id !== undefined && (isNaN(Number(_kb_id)) || Number(_kb_id) <= 0)) {
             return res.status(400).json({ success: false, error: 'Invalid KB ID' });
         }
-        if (token !== undefined && (typeof token !== 'string' || token.length < 10)) {
+        if (_token !== undefined && (typeof _token !== 'string' || _token.length < 10)) {
             return res.status(400).json({ success: false, error: 'Token must be at least 10 characters' });
         }
         const allowedFields = ['kb_name', 'token', 'owner', 'permission', 'status', 'expiresAt'];
-        const updateData = Object.keys(req.body)
+        const data = Object.keys(updateData)
             .filter((key) => allowedFields.includes(key))
-            .reduce((acc, key) => ({ ...acc, [key]: req.body[key] }), {});
-        const updated = await tokenStore.update(id, updateData);
+            .reduce((acc, key) => ({ ...acc, [key]: updateData[key] }), {});
+        const updated = await tokenStore.update(id, data);
         if (!updated) {
             return res.status(404).json({ success: false, error: 'Token not found' });
         }

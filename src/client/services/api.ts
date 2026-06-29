@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { message } from 'antd'
 import { useAuthStore } from '../stores/useAuthStore'
 
 const api = axios.create({
@@ -20,25 +21,28 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    const status = error.response?.status
-    const serverMsg = error.response?.data?.error || error.response?.data?.msg
-    let message = 'Request failed'
-
-    if (status === 401) {
-      message = serverMsg || '未授权，请检查 API Key'
-    } else if (status === 403) {
-      message = serverMsg || '权限不足'
-    } else if (status === 404) {
-      message = serverMsg || '资源不存在'
-    } else if (status === 500) {
-      message = serverMsg || '服务器错误'
-    } else if (serverMsg) {
-      message = serverMsg
-    } else if (error.message) {
-      message = error.message
+    if (error.response) {
+      const { status, data } = error.response
+      switch (status) {
+        case 401:
+          message.error('未授权，请重新登录')
+          break
+        case 403:
+          message.error('无权限访问')
+          break
+        case 404:
+          message.error('资源不存在')
+          break
+        case 500:
+          message.error('服务器错误')
+          break
+        default:
+          message.error(data?.error || '请求失败')
+      }
+    } else {
+      message.error('网络错误，请检查连接')
     }
-
-    return Promise.reject(new Error(message))
+    return Promise.reject(error)
   }
 )
 

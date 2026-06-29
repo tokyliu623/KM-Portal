@@ -194,6 +194,11 @@ PORT=5053 nohup ./dist/km-portal-linux > server.log 2>&1 &
 | POST | /:kbId/documents | 创建文档 | write |
 | PUT | /:kbId/documents/:docId | 更新文档 | write |
 | DELETE | /:kbId/documents/:docId | 删除文档 | write |
+| POST | /tree | 获取 KB 树形结构（代理上游） | read |
+| POST | /info | 获取 KB 信息（代理上游） | read |
+| POST | /content | 获取文档内容（代理上游） | read |
+| POST | /contents/create | 创建文档（代理上游） | write |
+| POST | /contents/update | 更新文档（代理上游） | write |
 
 ### Stats Routes (/api/stats)
 
@@ -378,6 +383,7 @@ build: 构建相关（如 pkg 打包）
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| 1.6.0 | 2026-06-29 | 修复 Skill 导出仅生成 .md 问题（改为完整 zip 安装包）；修复 KBBrowser "资源不存在"（新增后端代理路由）；新增 Token 编辑 Modal；新增 axios 统一错误拦截；新增 DataState 组件；新增 KB 内容预览 |
 | 1.5.0 | 2026-06-29 | 修复 Express Router 路由匹配问题，使用 app.use 直接挂载路由 |
 | 1.4.  | 2026-06-29 | 添加 pkg 静态打包支持，解决 GLIBC 兼容性问题 |
 | 1.4.0 | 2026-06-27 | 新增服务器部署脚本 |

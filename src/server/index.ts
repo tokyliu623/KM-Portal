@@ -8,6 +8,7 @@ import skillRouter from './routes/skill.js'
 import diagRouter from './routes/diag.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { requestLogger } from './middleware/logger.js'
+import { KMApiClient } from './services/kmApiClient.js'
 
 const __dirname = path.resolve()
 const STATIC_DIR = path.join(__dirname, 'dist/client')
@@ -15,6 +16,12 @@ const INDEX_FILE = path.join(__dirname, 'dist/client/index.html')
 
 const app = express()
 const PORT = process.env.PORT || 5053
+
+const kmApiClient = new KMApiClient({
+  baseUrl: process.env.WIKI_BASE_URL || 'https://wiki.vivo.xyz',
+  apiKey: process.env.KM_API_KEY || '',
+})
+app.locals.kmApiClient = kmApiClient
 
 app.use(cors())
 app.use(express.json())

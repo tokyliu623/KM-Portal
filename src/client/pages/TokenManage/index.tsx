@@ -1,16 +1,20 @@
-import { Table, Button, Space, Tag, message, Form, Input, Select, Popconfirm } from 'antd'
+import { Table, Button, Space, Tag, message, Form, Input, Select, Popconfirm, Modal } from 'antd'
 import { PageHeader } from '../../components/PageHeader'
-import { Loading } from '../../components/Loading'
+import { DataState } from '../../components/DataState'
 import { useTokenStore } from '../../stores/useTokenStore'
-import { useEffect } from 'react'
-import { adminApi } from '../../services/admin'
+import { useEffect, useState } from 'react'
+import { adminApi, KMToken } from '../../services/admin'
 
 export function TokenManage() {
   const { tokens, loading, setTokens, setLoading } = useTokenStore()
   const [form] = Form.useForm()
+  const [editForm] = Form.useForm()
+  const [editVisible, setEditVisible] = useState(false)
+  const [editingToken, setEditingToken] = useState<KMToken | null>(null)
 
   useEffect(() => {
     loadTokens()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadTokens = () => {
@@ -21,7 +25,7 @@ export function TokenManage() {
           setTokens(res.data)
         }
       })
-      .catch((err) => message.error(err.response?.data?.error || err.message || '加载失败'))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }
 
@@ -64,6 +68,34 @@ export function TokenManage() {
     }
   }
 
+  const handleEdit = (record: KMToken) => {
+    setEditingToken(record)
+    editForm.setFieldsValue({
+      name: record.kb_name,
+      kbId: record.kb_id,
+      kbName: record.kb_name,
+      status: record.status,
+    })
+    setEditVisible(true)
+  }
+
+  const handleEditSave = async () => {
+    try {
+      const values = await editForm.validateFields()
+      if (!editingToken) return
+      await adminApi.updateToken(editingToken.id, {
+        kb_name: values.name,
+        kb_id: Number(values.kbId),
+        status: values.status,
+      })
+      message.success('更新成功')
+      setEditVisible(false)
+      loadTokens()
+    } catch (err) {
+      message.error((err as Error).message || '更新失败')
+    }
+  }
+
   const columns = [
     { title: '知识库', dataIndex: 'kb_name', key: 'kb_name' },
     { title: 'KB ID', dataIndex: 'kb_id', key: 'kb_id' },
@@ -99,6 +131,7 @@ export function TokenManage() {
       key: 'action',
       render: (_: unknown, record: KMToken) => (
         <Space>
+          <Button size="small" onClick={() => handleEdit(record)}>编辑</Button>
           {record.status === 'active' && (
             <Popconfirm
               title="确定撤销此 Token？"
@@ -130,7 +163,7 @@ export function TokenManage() {
         </Form.Item>
         <Form.Item name="kb_id" label="KB ID" rules={[{
           required: true,
-          validator: (_: any, value: any) => {
+          validator: (_: unknown, value: string) => {
             if (!value) return Promise.reject('KB ID 不能为空');
             const num = Number(value);
             if (isNaN(num) || num <= 0 || !Number.isInteger(num)) {
@@ -155,7 +188,42 @@ export function TokenManage() {
           </Select>
         </Form.Item>
       </Form>
-      <Table columns={columns} dataSource={tokens} rowKey="id" loading={loading} />
+      <DataState loading={loading} empty={tokens.length === 0} emptyText="暂无 Token">
+        <Table columns={columns} dataSource={tokens} rowKey="id" />
+      </DataState>
+
+      <Modal
+        title="编辑 Token"
+        open={editVisible}
+        onOk={handleEditSave}
+        onCancel={() => setEditVisible(false)}
+      >
+        <Form form={editForm} layout="vertical">
+          <Form.Item name="name" label="知识库名称" rules={[{ required: true }]}>
+            <Input placeholder="知识库名称" />
+          </Form.Item>
+          <Form.Item name="kbId" label="KB ID" rules={[{
+            required: true,
+            validator: (_: unknown, value: string) => {
+              if (!value) return Promise.reject('KB ID 不能为空');
+              const num = Number(value);
+              if (isNaN(num) || num <= 0 || !Number.isInteger(num)) {
+                return Promise.reject('KB ID 必须是正整数');
+              }
+              return Promise.resolve();
+            },
+            trigger: 'blur',
+          }]}>
+            <Input type="number" placeholder="KB ID" />
+          </Form.Item>
+          <Form.Item name="status" label="状态" rules={[{ required: true }]}>
+            <Select>
+              <Select.Option value="active">有效</Select.Option>
+              <Select.Option value="revoked">已撤销</Select.Option>
+            </Select>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   )
 }

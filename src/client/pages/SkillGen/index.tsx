@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Card, Input, Button, message, Form, Select, Space, Table, Modal, Popconfirm } from 'antd'
+import { Input, Button, message, Form, Select, Space, Table, Modal, Popconfirm } from 'antd'
 import { PageHeader } from '../../components/PageHeader'
+import { DataState } from '../../components/DataState'
 import { skillApi, GeneratedSkill } from '../../services/skill'
 
 const { TextArea } = Input
@@ -72,15 +73,16 @@ export function SkillGen() {
   const handleExport = async (skill: GeneratedSkill) => {
     try {
       const res = await skillApi.export(skill.id)
-      const content = res.data || skill.content
-      const blob = new Blob([content], { type: 'text/markdown' })
+      const blob = new Blob([res.data], { type: 'application/zip' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${skill.name.replace(/[^a-z0-9]/gi, '_')}.md`
+      a.download = `kb-${skill.name.toLowerCase().replace(/\s+/g, '-')}-v1.0.0.zip`
+      document.body.appendChild(a)
       a.click()
+      document.body.removeChild(a)
       URL.revokeObjectURL(url)
-      message.success('导出成功')
+      message.success('Skill 安装包已导出')
     } catch (err) {
       message.error((err as Error).message || '导出失败')
     }
@@ -109,7 +111,7 @@ export function SkillGen() {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: GeneratedSkill) => (
+      render: (_: unknown, record: GeneratedSkill) => (
         <Space>
           <Button size="small" onClick={() => setGeneratedSkill(record)}>查看</Button>
           <Button size="small" onClick={() => handleExport(record)}>导出</Button>
@@ -127,7 +129,9 @@ export function SkillGen() {
       <div style={{ marginBottom: 16 }}>
         <Button type="primary" onClick={() => setModalVisible(true)}>生成新 Skill</Button>
       </div>
-      <Table columns={columns} dataSource={skills} rowKey="id" loading={loading} />
+      <DataState loading={loading} empty={skills.length === 0} emptyText="暂无 Skill">
+        <Table columns={columns} dataSource={skills} rowKey="id" />
+      </DataState>
 
       <Modal
         title="生成新 Skill"
@@ -142,7 +146,7 @@ export function SkillGen() {
           </Form.Item>
           <Form.Item name="kbId" label="KB ID" rules={[{
             required: true,
-            validator: (_: any, value: any) => {
+            validator: (_: unknown, value: string) => {
               if (!value) return Promise.reject('KB ID 不能为空');
               const num = Number(value);
               if (isNaN(num) || num <= 0 || !Number.isInteger(num)) {

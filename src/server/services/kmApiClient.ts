@@ -1,51 +1,96 @@
-export class KmApiClient {
-  private baseUrl: string;
-  private apiKey: string;
+export class KMApiError extends Error {
+  status: number
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = 'KMApiError'
+    this.status = status
+  }
+}
 
-  constructor(baseUrl: string, apiKey: string) {
-    this.baseUrl = baseUrl;
-    this.apiKey = apiKey;
+interface KMApiClientConfig {
+  baseUrl: string
+  apiKey: string
+}
+
+export class KMApiClient {
+  private baseUrl: string
+  private apiKey: string
+
+  constructor(config: KMApiClientConfig) {
+    this.baseUrl = config.baseUrl || process.env.WIKI_BASE_URL || 'https://wiki.vivo.xyz'
+    this.apiKey = config.apiKey || process.env.KM_API_KEY || ''
   }
 
-  async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+  private async request<T>(endpoint: string, options?: RequestInit, accessToken?: string): Promise<T> {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000)
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(options?.headers as Record<string, string>),
+      }
+      if (accessToken) {
+        headers['accessToken'] = accessToken
+      }
+      if (this.apiKey) {
+        headers['Authorization'] = `Bearer ${this.apiKey}`
+      }
+
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         ...options,
         signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
-          ...options?.headers,
-        },
-      });
+        headers,
+      })
+
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
-        clearTimeout(timeoutId);
-        let errorMessage = 'Unknown error';
+        let errorMessage = `KM API error: ${response.status}`
         if (response.status === 401) {
-          errorMessage = 'Unauthorized: Invalid or expired API key';
+          errorMessage = 'Unauthorized: Invalid or expired token'
         } else if (response.status === 403) {
-          errorMessage = 'Forbidden: Insufficient permissions';
+          errorMessage = 'Forbidden: Insufficient permissions'
         } else if (response.status === 404) {
-          errorMessage = 'Resource not found';
+          errorMessage = 'Resource not found'
         } else if (response.status >= 500) {
-          errorMessage = 'KM API server error';
-        } else {
-          errorMessage = `KM API error: ${response.status}`;
+          errorMessage = 'KM API server error'
         }
-        throw Object.assign(new Error(errorMessage), { statusCode: response.status });
+        throw new KMApiError(response.status, errorMessage)
       }
 
-      clearTimeout(timeoutId);
-      return response.json() as Promise<T>;
+      return response.json() as Promise<T>
     } catch (error) {
-      clearTimeout(timeoutId);
+      clearTimeout(timeoutId)
       if (error instanceof Error && error.name === 'AbortError') {
-        throw Object.assign(new Error('Request timeout: KM API did not respond within 30 seconds'), { statusCode: 408 });
+        throw new KMApiError(408, 'Request timeout: KM API did not respond within 30 seconds')
       }
-      throw error;
+      throw error
     }
+  }
+
+  async getKBInfo(kbId: string, accessToken: string): Promise<unknown> {
+    return this.request(`/api/knowledge/v1/openapi/kb/${kbId}/info`, { method: 'GET' }, accessToken)
+  }
+
+  async getKBTree(kbId: string, accessToken: string): Promise<unknown> {
+    return this.request(`/api/knowledge/v1/openapi/kb/${kbId}/tree`, { method: 'GET' }, accessToken)
+  }
+
+  async getKBDocument(kbId: string, docId: string, accessToken: string): Promise<unknown> {
+    return this.request(`/api/knowledge/v1/openapi/kb/${kbId}/document/${docId}`, { method: 'GET' }, accessToken)
+  }
+
+  async createDocument(kbId: string, data: unknown, accessToken: string): Promise<unknown> {
+    return this.request(`/api/knowledge/v1/openapi/kb/${kbId}/contents/create`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }, accessToken)
+  }
+
+  async updateDocument(kbId: string, docId: string, data: unknown, accessToken: string): Promise<unknown> {
+    return this.request(`/api/knowledge/v1/openapi/kb/${kbId}/contents/update`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }, accessToken)
   }
 }

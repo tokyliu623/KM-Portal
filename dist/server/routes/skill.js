@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { buildSkillZip } from '../services/skillPackage';
 const router = Router();
 const DATA_DIR = path.join(process.cwd(), 'data');
 const SKILLS_FILE = path.join(DATA_DIR, 'skills.json');
@@ -175,9 +176,19 @@ router.get('/:id/export', async (req, res) => {
         if (!skill) {
             return res.status(404).json({ success: false, error: 'Skill not found' });
         }
-        res.setHeader('Content-Type', 'text/markdown');
-        res.setHeader('Content-Disposition', `attachment; filename="${skill.name.replace(/[^a-z0-9]/gi, '_')}.md"`);
-        res.send(skill.content);
+        const zipBuffer = await buildSkillZip({
+            skillId: skill.id,
+            skillName: skill.name,
+            description: skill.description || '',
+            triggerWords: [],
+            kbId: skill.kbId,
+            kbName: skill.kbName,
+            content: skill.content,
+        });
+        const filename = `kb-${skill.name.toLowerCase().replace(/\s+/g, '-')}-v1.0.0.zip`;
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(zipBuffer);
     }
     catch (error) {
         res.status(500).json({ success: false, error: 'Failed to export skill' });
