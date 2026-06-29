@@ -1,4 +1,4 @@
-import { Card, Tabs, CodeBlock } from 'antd'
+import { Card, Tabs } from 'antd'
 import { PageHeader } from '../../components/PageHeader'
 
 const { TabPane } = Tabs

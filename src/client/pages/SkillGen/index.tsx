@@ -23,9 +23,14 @@ export function SkillGen() {
       .then((res) => {
         if (res.success && res.data) {
           setSkills(res.data)
+        } else {
+          message.error(res.error || res.message || '加载失败')
         }
       })
-      .catch(() => message.error('加载失败'))
+      .catch((err: Error) => {
+        console.error('[SkillGen] loadSkills error:', err)
+        message.error(`加载失败: ${err.message}`)
+      })
       .finally(() => setLoading(false))
   }
 

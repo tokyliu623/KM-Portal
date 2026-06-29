@@ -20,9 +20,9 @@ if ! command -v node &> /dev/null || node --version | grep -q "GLIBC"; then
     fi
     
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    nvm install 18
-    nvm use 18
-    nvm alias default 18
+    nvm install 14
+    nvm use 14
+    nvm alias default 14
 fi
 
 echo ">>> 安装生产依赖..."
