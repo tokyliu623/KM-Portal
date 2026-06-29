@@ -24852,8 +24852,8 @@ function requestLogger(req, res, next) {
 
 // src/server/index.ts
 var __dirname = import_path5.default.resolve();
-var STATIC_DIR = import_path5.default.join(__dirname, "client");
-var INDEX_FILE = import_path5.default.join(__dirname, "client/index.html");
+var STATIC_DIR = import_path5.default.join(__dirname, "dist/client");
+var INDEX_FILE = import_path5.default.join(__dirname, "dist/client/index.html");
 var app = (0, import_express7.default)();
 var PORT = process.env.PORT || 5053;
 app.use((0, import_cors.default)());

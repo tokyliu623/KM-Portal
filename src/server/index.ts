@@ -6,8 +6,8 @@ import { errorHandler } from './middleware/errorHandler.js'
 import { requestLogger } from './middleware/logger.js'
 
 const __dirname = path.resolve()
-const STATIC_DIR = path.join(__dirname, 'client')
-const INDEX_FILE = path.join(__dirname, 'client/index.html')
+const STATIC_DIR = path.join(__dirname, 'dist/client')
+const INDEX_FILE = path.join(__dirname, 'dist/client/index.html')
 
 const app = express()
 const PORT = process.env.PORT || 5053
