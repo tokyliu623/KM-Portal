@@ -15,18 +15,12 @@ git config --global http.postBuffer 524288000 2>/dev/null || true
 git config --global http.lowSpeedLimit 1000 2>/dev/null || true
 git config --global http.lowSpeedTime 300 2>/dev/null || true
 
-echo ">>> 拉取最新代码..."
-MAX_RETRIES=3
-RETRY_COUNT=0
-until git pull origin main; do
-    RETRY_COUNT=$((RETRY_COUNT + 1))
-    if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
-        echo ">>> 拉取失败，已重试 $MAX_RETRIES 次"
-        exit 1
-    fi
-    echo ">>> 拉取失败，重试中 ($RETRY_COUNT/$MAX_RETRIES)..."
-    sleep 10
-done
+echo ">>> 忽略本地文件权限变更（防止 chmod 后 pull 失败）..."
+git config core.fileMode false
+
+echo ">>> 强制同步远程代码..."
+git fetch origin main
+git reset --hard origin/main
 
 echo ">>> 检查静态可执行文件..."
 if [ ! -f "$SCRIPT_DIR/dist/km-portal-linux" ]; then
@@ -36,6 +30,7 @@ if [ ! -f "$SCRIPT_DIR/dist/km-portal-linux" ]; then
 fi
 
 chmod +x "$SCRIPT_DIR/dist/km-portal-linux"
+chmod +x "$SCRIPT_DIR/deploy-server.sh"
 
 echo ">>> 检查服务进程..."
 if pgrep -f "km-portal-linux" > /dev/null; then
