@@ -36,9 +36,11 @@ export function SkillGen() {
   }
 
   const handleCreate = async () => {
+    let translateHide: (() => void) | null = null
     try {
       const values = await form.validateFields()
       setGenerating(true)
+      translateHide = message.loading('正在翻译知识库名...', 0)
       const res = await skillApi.create({
         name: values.name,
         description: values.description,
@@ -48,7 +50,7 @@ export function SkillGen() {
       })
       if (res.success && res.data) {
         setGeneratedSkill(res.data)
-        message.success('Skill 生成成功')
+        message.success(`Skill 生成成功：${res.data.name}`)
         setModalVisible(false)
         form.resetFields()
         loadSkills()
@@ -56,6 +58,7 @@ export function SkillGen() {
     } catch (err) {
       message.error((err as Error).message || '生成失败')
     } finally {
+      if (translateHide) translateHide()
       setGenerating(false)
     }
   }
@@ -89,7 +92,8 @@ export function SkillGen() {
   }
 
   const columns = [
-    { title: '名称', dataIndex: 'name', key: 'name' },
+    { title: '英文名', dataIndex: 'name', key: 'name' },
+    { title: '原始名称', dataIndex: 'nameOriginal', key: 'nameOriginal', render: (v: string) => v || '-' },
     { title: '知识库', dataIndex: 'kbName', key: 'kbName' },
     { title: 'KB ID', dataIndex: 'kbId', key: 'kbId' },
     {

@@ -67862,6 +67862,91 @@ async function buildSkillZip(options) {
   });
 }
 
+// src/server/services/translator.ts
+var import_child_process = require("child_process");
+var import_util = require("util");
+var execFileAsync = (0, import_util.promisify)(import_child_process.execFile);
+var LLM_API_URL = process.env.LLM_API_URL || "http://jiuwen-api.vmic.xyz/v1/chat-messages";
+var LLM_API_KEY = process.env.LLM_API_KEY || "";
+var LLM_BOT_ID = process.env.LLM_BOT_ID || "";
+var sessions = /* @__PURE__ */ new Map();
+var SESSION_TIMEOUT_MS = 60 * 60 * 1e3;
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, s] of sessions.entries()) {
+    if (now - s.lastUsed > SESSION_TIMEOUT_MS) {
+      sessions.delete(k);
+    }
+  }
+}, 60 * 1e3);
+async function translateToEnglish(prompt, kbId) {
+  if (!LLM_API_KEY) {
+    throw new Error("LLM_API_KEY is not configured");
+  }
+  let session = sessions.get(kbId);
+  if (!session) {
+    session = { conversationId: null, lastUsed: Date.now() };
+    sessions.set(kbId, session);
+  }
+  session.lastUsed = Date.now();
+  const body = {
+    query: prompt,
+    inputs: {},
+    response_mode: "blocking",
+    user: `km-portal-${kbId}`
+  };
+  if (session.conversationId) {
+    body.conversation_id = session.conversationId;
+  }
+  const { stdout } = await execFileAsync(
+    "curl",
+    [
+      "-s",
+      "-X",
+      "POST",
+      LLM_API_URL,
+      "-H",
+      "Content-Type: application/json",
+      "-H",
+      `Authorization: Bearer ${LLM_API_KEY}`,
+      "-d",
+      JSON.stringify(body),
+      "--max-time",
+      "30"
+    ],
+    { timeout: 35e3 }
+  );
+  let data;
+  try {
+    data = JSON.parse(stdout);
+  } catch {
+    return asciiFallback(prompt);
+  }
+  const answer = (data?.answer || "").toString().trim();
+  if (data?.conversation_id && !session.conversationId) {
+    session.conversationId = data.conversation_id;
+  }
+  const match = answer.match(/知识库英文名[：:]\s*([^\n]+)/);
+  if (match) {
+    return sanitizeEnglish(match[1].trim());
+  }
+  const lines = answer.split("\n").map((l) => l.trim()).filter(Boolean);
+  if (lines.length > 0) {
+    const last = lines[lines.length - 1];
+    if (/^[A-Za-z]/.test(last)) {
+      return sanitizeEnglish(last);
+    }
+  }
+  return asciiFallback(prompt);
+}
+function sanitizeEnglish(s) {
+  return s.replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, " ").trim().slice(0, 80) || "Skill";
+}
+function asciiFallback(name) {
+  const ascii = name.replace(/[^\x20-\x7E]/g, "").replace(/\s+/g, "-").toLowerCase().replace(/-+/g, "-").replace(/^-|-$/g, "").slice(0, 50);
+  return ascii || `skill-${Date.now()}`;
+}
+
 // src/server/routes/skill.ts
 var router4 = (0, import_express4.Router)();
 var DATA_DIR3 = import_path3.default.join(process.cwd(), "data");
@@ -67955,14 +68040,22 @@ router4.post("/", async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid kbId: must be a positive number" });
     }
     const validPermission = permission === "write" ? "write" : "read";
+    let nameEn;
+    try {
+      nameEn = await translateToEnglish(name, String(kbId));
+    } catch (err) {
+      console.error("[Translate Error]:", err);
+      nameEn = asciiFallback(name);
+    }
     const skill = {
       id: v4_default(),
-      name,
+      name: nameEn,
+      nameOriginal: name,
       description: description || `Skill for ${kbName || "knowledge base"}`,
       kbId: Number(kbId),
       kbName: kbName || `KB-${kbId}`,
       permission: validPermission,
-      content: generateSkillContent(name, Number(kbId), kbName || `KB-${kbId}`, validPermission),
+      content: generateSkillContent(nameEn, Number(kbId), kbName || `KB-${kbId}`, validPermission),
       createdAt: (/* @__PURE__ */ new Date()).toISOString(),
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     };
@@ -68041,11 +68134,17 @@ router4.get("/:id/export", async (req, res) => {
       kbName: skill.kbName,
       content: skill.content
     });
-    const filename = `kb-${skill.name.toLowerCase().replace(/\s+/g, "-")}-v1.0.0.zip`;
+    const safeName = skill.name.replace(/[^\w\u4e00-\u9fa5\-_.]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "skill";
+    const filename = `kb-${safeName}-v1.0.0.zip`;
+    const filenameFallback = filename.replace(/[^\x20-\x7E]/g, "_");
     res.setHeader("Content-Type", "application/zip");
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${filenameFallback}"; filename*=UTF-8''${encodeURIComponent(filename)}`
+    );
     res.send(zipBuffer);
   } catch (error) {
+    console.error("[Skill Export Error]:", error);
     res.status(500).json({ success: false, error: "Failed to export skill" });
   }
 });

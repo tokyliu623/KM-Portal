@@ -3,6 +3,7 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { buildSkillZip } from '../services/skillPackage'
+import { translateToEnglish, asciiFallback } from '../services/translator'
 
 const router = Router()
 const DATA_DIR = path.join(process.cwd(), 'data')
@@ -25,6 +26,7 @@ async function withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
 export interface GeneratedSkill {
   id: string
   name: string
+  nameOriginal: string
   description: string
   kbId: number
   kbName: string
@@ -126,14 +128,23 @@ router.post('/', async (req, res) => {
 
     const validPermission = permission === 'write' ? 'write' : 'read'
 
+    let nameEn: string
+    try {
+      nameEn = await translateToEnglish(name, String(kbId))
+    } catch (err) {
+      console.error('[Translate Error]:', err)
+      nameEn = asciiFallback(name)
+    }
+
     const skill: GeneratedSkill = {
       id: uuidv4(),
-      name,
+      name: nameEn,
+      nameOriginal: name,
       description: description || `Skill for ${kbName || 'knowledge base'}`,
       kbId: Number(kbId),
       kbName: kbName || `KB-${kbId}`,
       permission: validPermission,
-      content: generateSkillContent(name, Number(kbId), kbName || `KB-${kbId}`, validPermission),
+      content: generateSkillContent(nameEn, Number(kbId), kbName || `KB-${kbId}`, validPermission),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
@@ -228,11 +239,22 @@ router.get('/:id/export', async (req, res) => {
       content: skill.content,
     })
 
-    const filename = `kb-${skill.name.toLowerCase().replace(/\s+/g, '-')}-v1.0.0.zip`
+    const safeName = skill.name
+      .replace(/[^\w\u4e00-\u9fa5\-_.]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .toLowerCase() || 'skill'
+    const filename = `kb-${safeName}-v1.0.0.zip`
+    const filenameFallback = filename.replace(/[^\x20-\x7E]/g, '_')
+
     res.setHeader('Content-Type', 'application/zip')
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${filenameFallback}"; filename*=UTF-8''${encodeURIComponent(filename)}`
+    )
     res.send(zipBuffer)
   } catch (error) {
+    console.error('[Skill Export Error]:', error)
     res.status(500).json({ success: false, error: 'Failed to export skill' })
   }
 })

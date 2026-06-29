@@ -3,6 +3,7 @@ import api from './api'
 export interface GeneratedSkill {
   id: string
   name: string
+  nameOriginal: string
   description: string
   kbId: number
   kbName: string
