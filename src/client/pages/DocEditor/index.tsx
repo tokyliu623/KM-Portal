@@ -20,15 +20,15 @@ export function DocEditor() {
     setLoading(true)
     try {
       const res = await kbApi.createContent(kbId, title, contentType, content)
-      if (res.code === 1) {
+      if (res.success) {
         message.success('发布成功')
         setTitle('')
         setContent('')
       } else {
         message.error(res.msg || '发布失败')
       }
-    } catch {
-      message.error('发布失败')
+    } catch (err) {
+      message.error((err as Error).message || '发布失败')
     } finally {
       setLoading(false)
     }

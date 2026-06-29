@@ -52,8 +52,8 @@ export function SkillGen() {
         form.resetFields()
         loadSkills()
       }
-    } catch {
-      message.error('生成失败')
+    } catch (err) {
+      message.error((err as Error).message || '生成失败')
     } finally {
       setGenerating(false)
     }
@@ -64,15 +64,16 @@ export function SkillGen() {
       await skillApi.delete(id)
       message.success('删除成功')
       loadSkills()
-    } catch {
-      message.error('删除失败')
+    } catch (err) {
+      message.error((err as Error).message || '删除失败')
     }
   }
 
   const handleExport = async (skill: GeneratedSkill) => {
     try {
       const res = await skillApi.export(skill.id)
-      const blob = new Blob([skill.content], { type: 'text/markdown' })
+      const content = res.data || skill.content
+      const blob = new Blob([content], { type: 'text/markdown' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -80,15 +81,15 @@ export function SkillGen() {
       a.click()
       URL.revokeObjectURL(url)
       message.success('导出成功')
-    } catch {
-      message.error('导出失败')
+    } catch (err) {
+      message.error((err as Error).message || '导出失败')
     }
   }
 
   const columns = [
     { title: '名称', dataIndex: 'name', key: 'name' },
     { title: '知识库', dataIndex: 'kbName', key: 'kbName' },
-    { title: 'KB ID', dataIndex: 'kbId', key: 'kbId', render: (id: number) => id },
+    { title: 'KB ID', dataIndex: 'kbId', key: 'kbId' },
     {
       title: '权限',
       dataIndex: 'permission',
@@ -139,7 +140,18 @@ export function SkillGen() {
           <Form.Item name="name" label="Skill 名称" rules={[{ required: true }]}>
             <Input placeholder="输入 Skill 名称" />
           </Form.Item>
-          <Form.Item name="kbId" label="KB ID" rules={[{ required: true, type: 'number' }]}>
+          <Form.Item name="kbId" label="KB ID" rules={[{
+            required: true,
+            validator: (_: any, value: any) => {
+              if (!value) return Promise.reject('KB ID 不能为空');
+              const num = Number(value);
+              if (isNaN(num) || num <= 0 || !Number.isInteger(num)) {
+                return Promise.reject('KB ID 必须是正整数');
+              }
+              return Promise.resolve();
+            },
+            trigger: 'blur',
+          }]}>
             <Input type="number" placeholder="输入 KB ID" />
           </Form.Item>
           <Form.Item name="kbName" label="知识库名称" rules={[{ required: true }]}>

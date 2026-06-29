@@ -12,18 +12,23 @@ router.get('/health', (_req, res) => {
 router.get('/token/:kbId', async (req, res) => {
     try {
         const { kbId } = req.params;
+        if (!kbId || isNaN(Number(kbId)) || Number(kbId) <= 0) {
+            return res.status(400).json({ success: false, error: 'Invalid KB ID' });
+        }
         const token = await tokenStore.findByKbId(kbId);
         if (!token) {
-            return res.json({
+            return res.status(404).json({
+                success: false,
+                error: 'No active token found for this KB',
                 kbId,
                 status: 'not_found',
-                message: 'No active token found for this KB',
             });
         }
         const expiresAt = new Date(token.expiresAt);
         const now = new Date();
         const daysUntilExpiry = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         return res.json({
+            success: true,
             kbId,
             status: token.status,
             permission: token.permission,
@@ -35,33 +40,33 @@ router.get('/token/:kbId', async (req, res) => {
         });
     }
     catch (error) {
-        res.status(500).json({ error: 'Diagnosis failed' });
+        res.status(500).json({ success: false, error: 'Diagnosis failed' });
     }
 });
 router.post('/verify', async (req, res) => {
     try {
         const { kbId, token } = req.body;
         if (!kbId || !token) {
-            return res.status(400).json({ error: 'kbId and token required' });
+            return res.status(400).json({ success: false, error: 'kbId and token required' });
         }
         const storedToken = await tokenStore.findByKbId(kbId);
         if (!storedToken) {
-            return res.json({ valid: false, reason: 'Token not found' });
+            return res.status(404).json({ success: false, valid: false, reason: 'Token not found' });
         }
         if (storedToken.token !== token) {
-            return res.json({ valid: false, reason: 'Token mismatch' });
+            return res.status(401).json({ success: false, valid: false, reason: 'Token mismatch' });
         }
         if (storedToken.status !== 'active') {
-            return res.json({ valid: false, reason: 'Token is revoked' });
+            return res.status(401).json({ success: false, valid: false, reason: 'Token is revoked' });
         }
         const expiresAt = new Date(storedToken.expiresAt);
         if (expiresAt < new Date()) {
-            return res.json({ valid: false, reason: 'Token expired' });
+            return res.status(401).json({ success: false, valid: false, reason: 'Token expired' });
         }
-        res.json({ valid: true, permission: storedToken.permission });
+        res.json({ success: true, valid: true, permission: storedToken.permission });
     }
     catch (error) {
-        res.status(500).json({ error: 'Verification failed' });
+        res.status(500).json({ success: false, error: 'Verification failed' });
     }
 });
 export default router;

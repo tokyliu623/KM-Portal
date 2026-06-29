@@ -16,6 +16,12 @@ router.post('/tokens', async (req, res) => {
         if (!kb_id || !token || !owner) {
             return res.status(400).json({ success: false, error: 'Missing required fields' });
         }
+        if (isNaN(Number(kb_id)) || Number(kb_id) <= 0) {
+            return res.status(400).json({ success: false, error: 'Invalid KB ID' });
+        }
+        if (typeof token !== 'string' || token.length < 10) {
+            return res.status(400).json({ success: false, error: 'Token must be at least 10 characters' });
+        }
         const newToken = await tokenStore.create({
             kb_id: Number(kb_id),
             kb_name: kb_name || '',
@@ -34,6 +40,13 @@ router.post('/tokens', async (req, res) => {
 router.put('/tokens/:id', async (req, res) => {
     try {
         const { id } = req.params;
+        const { kb_id, kb_name, token, owner, permission, status, expiresAt } = req.body;
+        if (kb_id !== undefined && (isNaN(Number(kb_id)) || Number(kb_id) <= 0)) {
+            return res.status(400).json({ success: false, error: 'Invalid KB ID' });
+        }
+        if (token !== undefined && (typeof token !== 'string' || token.length < 10)) {
+            return res.status(400).json({ success: false, error: 'Token must be at least 10 characters' });
+        }
         const allowedFields = ['kb_name', 'token', 'owner', 'permission', 'status', 'expiresAt'];
         const updateData = Object.keys(req.body)
             .filter((key) => allowedFields.includes(key))

@@ -3,6 +3,7 @@ export interface ApiKey {
   name: string;
   key: string;
   createdAt: string;
+  /** ISO 8601 timestamp of last API key usage */
   lastUsed?: string;
 }
 

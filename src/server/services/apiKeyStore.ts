@@ -1,10 +1,19 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { ApiKey } from '../types';
 
+// NOTE: This store uses in-memory storage only.
+// Data is lost on server restart. For production, implement file-based or database persistence.
+
 const keys: Map<string, ApiKey> = new Map();
 
 export const apiKeyStore = {
   create(name: string, key: string): ApiKey {
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      throw new Error('Invalid name: name is required and must be a non-empty string')
+    }
+    if (!key || typeof key !== 'string' || key.length < 10) {
+      throw new Error('Invalid API key: key must be at least 10 characters')
+    }
     const apiKey: ApiKey = {
       id: uuidv4(),
       name,

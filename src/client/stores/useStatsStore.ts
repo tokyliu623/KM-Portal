@@ -1,11 +1,11 @@
 import { create } from 'zustand'
-import type { StatsData } from '../services/stats'
+import type { StatsOverview } from '../services/stats'
 
 interface StatsState {
-  last7Days: StatsData | null
-  last30Days: StatsData | null
+  last7Days: StatsOverview | null
+  last30Days: StatsOverview | null
   loading: boolean
-  setStats: (last7Days: StatsData, last30Days: StatsData) => void
+  setStats: (last7Days: StatsOverview, last30Days: StatsOverview) => void
   setLoading: (loading: boolean) => void
 }
 

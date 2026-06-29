@@ -1,4 +1,4 @@
-import { Card, Row, Col, Statistic } from 'antd'
+import { Card, Row, Col, Statistic, message } from 'antd'
 import { PageHeader } from '../../components/PageHeader'
 import { Loading } from '../../components/Loading'
 import { useStatsStore } from '../../stores/useStatsStore'
@@ -9,17 +9,33 @@ export function Dashboard() {
   const { last7Days, last30Days, loading, setStats, setLoading } = useStatsStore()
 
   useEffect(() => {
-    setLoading(true)
-    statsApi.getOverview()
-      .then((res) => {
-        if (res.success && res.data) {
+    const fetchData = async () => {
+      setLoading(true)
+      try {
+        const [overviewRes, daily7Res, daily30Res] = await Promise.all([
+          statsApi.getOverview(),
+          statsApi.getDaily(7),
+          statsApi.getDaily(30),
+        ])
+        if (overviewRes.success && overviewRes.data) {
           setStats(
-            { total: res.data.totalCalls, avgLatency: 0 },
-            { total: res.data.totalCalls, avgLatency: 0 }
+            { total: overviewRes.data.totalCalls, avgLatency: 0 },
+            { total: overviewRes.data.totalCalls, avgLatency: 0 }
           )
         }
-      })
-      .finally(() => setLoading(false))
+        if (daily7Res.success && daily7Res.data) {
+          setStats(daily7Res.data, last30Days)
+        }
+        if (daily30Res.success && daily30Res.data) {
+          setStats(last7Days, daily30Res.data)
+        }
+      } catch (err: any) {
+        message.error(`加载失败: ${err.message}`)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
   }, [])
 
   if (loading) return <Loading />

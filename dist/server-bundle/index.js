@@ -24220,6 +24220,18 @@ var v4_default = v4;
 // src/server/services/tokenStore.ts
 var DATA_DIR = import_path.default.join(process.cwd(), "data");
 var TOKENS_FILE = import_path.default.join(DATA_DIR, "tokens.json");
+var locks = /* @__PURE__ */ new Set();
+async function withLock(key, fn) {
+  while (locks.has(key)) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  locks.add(key);
+  try {
+    return await fn();
+  } finally {
+    locks.delete(key);
+  }
+}
 async function readStore() {
   try {
     const content = await import_fs.promises.readFile(TOKENS_FILE, "utf-8");
@@ -24234,21 +24246,32 @@ async function writeStore(store) {
 }
 var tokenStore = {
   async create(data) {
-    const store = await readStore();
-    const kbIdNum = Number(data.kb_id);
-    if (isNaN(kbIdNum)) {
-      throw new Error("Invalid kb_id: must be a number");
+    if (!data.token || typeof data.token !== "string" || data.token.length < 10) {
+      throw new Error("Invalid token: must be a non-empty string of at least 10 characters");
     }
-    const token = {
-      ...data,
-      id: v4_default(),
-      kb_id: kbIdNum,
-      createdAt: (/* @__PURE__ */ new Date()).toISOString(),
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    store.tokens.push(token);
-    await writeStore(store);
-    return token;
+    if (!data.owner || typeof data.owner !== "string" || data.owner.trim().length === 0) {
+      throw new Error("Invalid owner: must be a non-empty string");
+    }
+    if (data.permission !== "read" && data.permission !== "write") {
+      throw new Error('Invalid permission: must be "read" or "write"');
+    }
+    return withLock("token", async () => {
+      const store = await readStore();
+      const kbIdNum = Number(data.kb_id);
+      if (isNaN(kbIdNum) || kbIdNum <= 0) {
+        throw new Error("Invalid kb_id: must be a positive number");
+      }
+      const token = {
+        ...data,
+        id: v4_default(),
+        kb_id: kbIdNum,
+        createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      store.tokens.push(token);
+      await writeStore(store);
+      return token;
+    });
   },
   async findAll() {
     const store = await readStore();
@@ -24264,33 +24287,39 @@ var tokenStore = {
     return store.tokens.find((t) => t.id === id);
   },
   async update(id, data) {
-    const store = await readStore();
-    const index = store.tokens.findIndex((t) => t.id === id);
-    if (index === -1) return void 0;
-    store.tokens[index] = {
-      ...store.tokens[index],
-      ...data,
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    await writeStore(store);
-    return store.tokens[index];
+    return withLock("token", async () => {
+      const store = await readStore();
+      const index = store.tokens.findIndex((t) => t.id === id);
+      if (index === -1) return void 0;
+      store.tokens[index] = {
+        ...store.tokens[index],
+        ...data,
+        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      await writeStore(store);
+      return store.tokens[index];
+    });
   },
   async revoke(id) {
-    const store = await readStore();
-    const token = store.tokens.find((t) => t.id === id);
-    if (!token) return false;
-    token.status = "revoked";
-    token.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-    await writeStore(store);
-    return true;
+    return withLock("token", async () => {
+      const store = await readStore();
+      const token = store.tokens.find((t) => t.id === id);
+      if (!token) return false;
+      token.status = "revoked";
+      token.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+      await writeStore(store);
+      return true;
+    });
   },
   async delete(id) {
-    const store = await readStore();
-    const index = store.tokens.findIndex((t) => t.id === id);
-    if (index === -1) return false;
-    store.tokens.splice(index, 1);
-    await writeStore(store);
-    return true;
+    return withLock("token", async () => {
+      const store = await readStore();
+      const index = store.tokens.findIndex((t) => t.id === id);
+      if (index === -1) return false;
+      store.tokens.splice(index, 1);
+      await writeStore(store);
+      return true;
+    });
   }
 };
 
@@ -24310,6 +24339,12 @@ router.post("/tokens", async (req, res) => {
     if (!kb_id || !token || !owner) {
       return res.status(400).json({ success: false, error: "Missing required fields" });
     }
+    if (isNaN(Number(kb_id)) || Number(kb_id) <= 0) {
+      return res.status(400).json({ success: false, error: "Invalid KB ID" });
+    }
+    if (typeof token !== "string" || token.length < 10) {
+      return res.status(400).json({ success: false, error: "Token must be at least 10 characters" });
+    }
     const newToken = await tokenStore.create({
       kb_id: Number(kb_id),
       kb_name: kb_name || "",
@@ -24327,6 +24362,13 @@ router.post("/tokens", async (req, res) => {
 router.put("/tokens/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    const { kb_id, kb_name, token, owner, permission, status, expiresAt } = req.body;
+    if (kb_id !== void 0 && (isNaN(Number(kb_id)) || Number(kb_id) <= 0)) {
+      return res.status(400).json({ success: false, error: "Invalid KB ID" });
+    }
+    if (token !== void 0 && (typeof token !== "string" || token.length < 10)) {
+      return res.status(400).json({ success: false, error: "Token must be at least 10 characters" });
+    }
     const allowedFields = ["kb_name", "token", "owner", "permission", "status", "expiresAt"];
     const updateData = Object.keys(req.body).filter((key) => allowedFields.includes(key)).reduce((acc, key) => ({ ...acc, [key]: req.body[key] }), {});
     const updated = await tokenStore.update(id, updateData);
@@ -24369,21 +24411,21 @@ var import_express2 = __toESM(require_express2(), 1);
 var router2 = (0, import_express2.Router)();
 async function verifyToken(req, res, requiredPermission = "read") {
   const kbId = req.params.kbId || req.body.kb_id;
-  if (!kbId) {
-    res.status(400).json({ error: "kbId required" });
+  if (!kbId || isNaN(Number(kbId)) || Number(kbId) <= 0) {
+    res.status(400).json({ success: false, error: "Invalid KB ID" });
     return null;
   }
   const token = await tokenStore.findByKbId(kbId);
   if (!token) {
-    res.status(401).json({ error: "No token found for this KB" });
+    res.status(401).json({ success: false, error: "No token found for this KB" });
     return null;
   }
   if (token.status !== "active") {
-    res.status(401).json({ error: "Token is not active" });
+    res.status(401).json({ success: false, error: "Token is not active" });
     return null;
   }
   if (token.permission === "read" && requiredPermission === "write") {
-    res.status(403).json({ error: "Insufficient permissions: need write access" });
+    res.status(403).json({ success: false, error: "Insufficient permissions: need write access" });
     return null;
   }
   return token;
@@ -24404,7 +24446,7 @@ router2.post("/:kbId/documents", async (req, res) => {
   if (!token) return;
   const { title, content, category } = req.body;
   if (!title || !content) {
-    return res.status(400).json({ error: "title and content required" });
+    return res.status(400).json({ success: false, error: "title and content required" });
   }
   res.json({
     success: true,
@@ -24490,12 +24532,16 @@ router3.get("/overview", async (_req, res) => {
     });
     res.json({ success: true, data: stats });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch stats" });
+    res.status(500).json({ success: false, error: "Failed to fetch stats" });
   }
 });
 router3.get("/daily", async (req, res) => {
   try {
-    const days = parseInt(req.query.days) || 7;
+    const daysNum = parseInt(req.query.days);
+    if (isNaN(daysNum) || daysNum <= 0) {
+      return res.status(400).json({ success: false, error: "Invalid days parameter" });
+    }
+    const days = daysNum;
     const logs = await readLogs();
     const cutoff = /* @__PURE__ */ new Date();
     cutoff.setDate(cutoff.getDate() - days);
@@ -24516,7 +24562,7 @@ router3.get("/daily", async (req, res) => {
       data: Object.values(dailyStats).sort((a, b) => a.date.localeCompare(b.date))
     });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch daily stats" });
+    res.status(500).json({ success: false, error: "Failed to fetch daily stats" });
   }
 });
 router3.get("/endpoints", async (_req, res) => {
@@ -24542,7 +24588,7 @@ router3.get("/endpoints", async (_req, res) => {
       data: Object.values(endpointStats).sort((a, b) => b.calls - a.calls)
     });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch endpoint stats" });
+    res.status(500).json({ success: false, error: "Failed to fetch endpoint stats" });
   }
 });
 var stats_default = router3;
@@ -24554,6 +24600,18 @@ var import_path3 = __toESM(require("path"), 1);
 var router4 = (0, import_express4.Router)();
 var DATA_DIR3 = import_path3.default.join(process.cwd(), "data");
 var SKILLS_FILE = import_path3.default.join(DATA_DIR3, "skills.json");
+var locks2 = /* @__PURE__ */ new Set();
+async function withLock2(key, fn) {
+  while (locks2.has(key)) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  locks2.add(key);
+  try {
+    return await fn();
+  } finally {
+    locks2.delete(key);
+  }
+}
 async function readStore2() {
   try {
     const content = await import_fs3.promises.readFile(SKILLS_FILE, "utf-8");
@@ -24606,7 +24664,7 @@ router4.get("/", async (_req, res) => {
     const store = await readStore2();
     res.json({ success: true, data: store.skills });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch skills" });
+    res.status(500).json({ success: false, error: "Failed to fetch skills" });
   }
 });
 router4.get("/:id", async (req, res) => {
@@ -24614,18 +24672,21 @@ router4.get("/:id", async (req, res) => {
     const store = await readStore2();
     const skill = store.skills.find((s) => s.id === req.params.id);
     if (!skill) {
-      return res.status(404).json({ error: "Skill not found" });
+      return res.status(404).json({ success: false, error: "Skill not found" });
     }
     res.json({ success: true, data: skill });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch skill" });
+    res.status(500).json({ success: false, error: "Failed to fetch skill" });
   }
 });
 router4.post("/", async (req, res) => {
   try {
     const { name, description, kbId, kbName, permission } = req.body;
-    if (!name || !kbId) {
-      return res.status(400).json({ error: "name and kbId are required" });
+    if (!name || !kbId || !kbName) {
+      return res.status(400).json({ success: false, error: "name, kbId and kbName are required" });
+    }
+    if (isNaN(Number(kbId)) || Number(kbId) <= 0) {
+      return res.status(400).json({ success: false, error: "Invalid kbId: must be a positive number" });
     }
     const validPermission = permission === "write" ? "write" : "read";
     const skill = {
@@ -24639,57 +24700,63 @@ router4.post("/", async (req, res) => {
       createdAt: (/* @__PURE__ */ new Date()).toISOString(),
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     };
-    const store = await readStore2();
-    store.skills.push(skill);
-    await writeStore2(store);
+    await withLock2("skill", async () => {
+      const store = await readStore2();
+      store.skills.push(skill);
+      await writeStore2(store);
+    });
     res.json({ success: true, data: skill });
   } catch (error) {
-    res.status(500).json({ error: "Failed to create skill" });
+    res.status(500).json({ success: false, error: "Failed to create skill" });
   }
 });
 router4.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description, permission } = req.body;
-    const store = await readStore2();
-    const index = store.skills.findIndex((s) => s.id === id);
-    if (index === -1) {
-      return res.status(404).json({ error: "Skill not found" });
-    }
-    const skill = store.skills[index];
-    const updatedSkill = {
-      ...skill,
-      name: name || skill.name,
-      description: description || skill.description,
-      permission: permission || skill.permission,
-      content: generateSkillContent(
-        name || skill.name,
-        skill.kbId,
-        skill.kbName,
-        permission || skill.permission
-      ),
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    store.skills[index] = updatedSkill;
-    await writeStore2(store);
-    res.json({ success: true, data: updatedSkill });
+    await withLock2("skill", async () => {
+      const store = await readStore2();
+      const index = store.skills.findIndex((s) => s.id === id);
+      if (index === -1) {
+        return res.status(404).json({ success: false, error: "Skill not found" });
+      }
+      const skill = store.skills[index];
+      const updatedSkill = {
+        ...skill,
+        name: name || skill.name,
+        description: description || skill.description,
+        permission: permission || skill.permission,
+        content: generateSkillContent(
+          name || skill.name,
+          skill.kbId,
+          skill.kbName,
+          permission || skill.permission
+        ),
+        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      store.skills[index] = updatedSkill;
+      await writeStore2(store);
+      res.json({ success: true, data: updatedSkill });
+    });
   } catch (error) {
-    res.status(500).json({ error: "Failed to update skill" });
+    res.status(500).json({ success: false, error: "Failed to update skill" });
   }
 });
 router4.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const store = await readStore2();
-    const index = store.skills.findIndex((s) => s.id === id);
-    if (index === -1) {
-      return res.status(404).json({ error: "Skill not found" });
-    }
-    store.skills.splice(index, 1);
-    await writeStore2(store);
-    res.json({ success: true, message: "Skill deleted" });
+    await withLock2("skill", async () => {
+      const store = await readStore2();
+      const index = store.skills.findIndex((s) => s.id === id);
+      if (index === -1) {
+        return res.status(404).json({ success: false, error: "Skill not found" });
+      }
+      store.skills.splice(index, 1);
+      await writeStore2(store);
+      res.json({ success: true, message: "Skill deleted" });
+    });
   } catch (error) {
-    res.status(500).json({ error: "Failed to delete skill" });
+    res.status(500).json({ success: false, error: "Failed to delete skill" });
   }
 });
 router4.get("/:id/export", async (req, res) => {
@@ -24697,13 +24764,13 @@ router4.get("/:id/export", async (req, res) => {
     const store = await readStore2();
     const skill = store.skills.find((s) => s.id === req.params.id);
     if (!skill) {
-      return res.status(404).json({ error: "Skill not found" });
+      return res.status(404).json({ success: false, error: "Skill not found" });
     }
     res.setHeader("Content-Type", "text/markdown");
     res.setHeader("Content-Disposition", `attachment; filename="${skill.name.replace(/[^a-z0-9]/gi, "_")}.md"`);
     res.send(skill.content);
   } catch (error) {
-    res.status(500).json({ error: "Failed to export skill" });
+    res.status(500).json({ success: false, error: "Failed to export skill" });
   }
 });
 var skill_default = router4;
@@ -24722,18 +24789,23 @@ router5.get("/health", (_req, res) => {
 router5.get("/token/:kbId", async (req, res) => {
   try {
     const { kbId } = req.params;
+    if (!kbId || isNaN(Number(kbId)) || Number(kbId) <= 0) {
+      return res.status(400).json({ success: false, error: "Invalid KB ID" });
+    }
     const token = await tokenStore.findByKbId(kbId);
     if (!token) {
-      return res.json({
+      return res.status(404).json({
+        success: false,
+        error: "No active token found for this KB",
         kbId,
-        status: "not_found",
-        message: "No active token found for this KB"
+        status: "not_found"
       });
     }
     const expiresAt = new Date(token.expiresAt);
     const now = /* @__PURE__ */ new Date();
     const daysUntilExpiry = Math.ceil((expiresAt.getTime() - now.getTime()) / (1e3 * 60 * 60 * 24));
     return res.json({
+      success: true,
       kbId,
       status: token.status,
       permission: token.permission,
@@ -24744,32 +24816,32 @@ router5.get("/token/:kbId", async (req, res) => {
       owner: token.owner
     });
   } catch (error) {
-    res.status(500).json({ error: "Diagnosis failed" });
+    res.status(500).json({ success: false, error: "Diagnosis failed" });
   }
 });
 router5.post("/verify", async (req, res) => {
   try {
     const { kbId, token } = req.body;
     if (!kbId || !token) {
-      return res.status(400).json({ error: "kbId and token required" });
+      return res.status(400).json({ success: false, error: "kbId and token required" });
     }
     const storedToken = await tokenStore.findByKbId(kbId);
     if (!storedToken) {
-      return res.json({ valid: false, reason: "Token not found" });
+      return res.status(404).json({ success: false, valid: false, reason: "Token not found" });
     }
     if (storedToken.token !== token) {
-      return res.json({ valid: false, reason: "Token mismatch" });
+      return res.status(401).json({ success: false, valid: false, reason: "Token mismatch" });
     }
     if (storedToken.status !== "active") {
-      return res.json({ valid: false, reason: "Token is revoked" });
+      return res.status(401).json({ success: false, valid: false, reason: "Token is revoked" });
     }
     const expiresAt = new Date(storedToken.expiresAt);
     if (expiresAt < /* @__PURE__ */ new Date()) {
-      return res.json({ valid: false, reason: "Token expired" });
+      return res.status(401).json({ success: false, valid: false, reason: "Token expired" });
     }
-    res.json({ valid: true, permission: storedToken.permission });
+    res.json({ success: true, valid: true, permission: storedToken.permission });
   } catch (error) {
-    res.status(500).json({ error: "Verification failed" });
+    res.status(500).json({ success: false, error: "Verification failed" });
   }
 });
 var diag_default = router5;
@@ -24777,14 +24849,16 @@ var diag_default = router5;
 // src/server/middleware/errorHandler.ts
 function errorHandler(err, _req, res, _next) {
   console.error("Error:", err.message);
-  res.status(500).json({ error: err.message || "Internal server error" });
+  const statusCode = err.statusCode || 500;
+  const message = process.env.NODE_ENV === "production" ? "Internal server error" : err.message;
+  res.status(statusCode).json({ success: false, error: message });
 }
 
 // src/server/services/statsStore.ts
 var import_fs4 = require("fs");
 var import_path4 = __toESM(require("path"), 1);
 var DATA_DIR4 = import_path4.default.join(process.cwd(), "data");
-var STATS_FILE = import_path4.default.join(DATA_DIR4, "api-stats.json");
+var STATS_FILE = import_path4.default.join(DATA_DIR4, "api-logs.json");
 async function readStore3() {
   try {
     const content = await import_fs4.promises.readFile(STATS_FILE, "utf-8");
@@ -24812,29 +24886,57 @@ async function recordCall(data) {
 
 // src/server/utils/index.ts
 function getClientIp(req) {
-  return req.headers["x-forwarded-for"] || req.ip || "unknown";
+  const forwarded = req.headers["x-forwarded-for"];
+  if (forwarded) {
+    return forwarded.split(",")[0].trim();
+  }
+  return req.ip || null;
 }
 
 // src/server/middleware/logger.ts
+var pendingLogs = [];
+var FLUSH_INTERVAL = 5e3;
+var FLUSH_BATCH_SIZE = 50;
+var flushTimer = null;
+async function flushLogs() {
+  if (pendingLogs.length === 0) return;
+  const batch = pendingLogs.splice(0, FLUSH_BATCH_SIZE);
+  await Promise.all(
+    batch.map(
+      (log) => recordCall({
+        ...log,
+        userAgent: log.userAgent
+      }).catch((err) => console.error("Failed to record call:", err.message))
+    )
+  );
+  if (pendingLogs.length > 0) {
+    setImmediate(() => flushLogs());
+  }
+}
+function ensureFlushTimer() {
+  if (flushTimer) return;
+  flushTimer = setInterval(() => {
+    flushLogs().catch((err) => console.error("Flush logs error:", err.message));
+  }, FLUSH_INTERVAL);
+  flushTimer.unref();
+}
 function requestLogger(req, res, next) {
   const start = Date.now();
-  const originalSend = res.send;
-  res.send = function(body) {
+  ensureFlushTimer();
+  res.on("finish", () => {
+    if (!req.apiKeyId) return;
     const latency = Date.now() - start;
-    if (req.apiKeyId) {
-      recordCall({
-        apiKeyId: req.apiKeyId,
-        kbId: req.kbId || "",
-        endpoint: req.path,
-        method: req.method,
-        statusCode: res.statusCode,
-        latencyMs: latency,
-        ip: getClientIp(req),
-        userAgent: req.headers["user-agent"] || ""
-      });
-    }
-    return originalSend.call(this, body);
-  };
+    pendingLogs.push({
+      apiKeyId: req.apiKeyId,
+      kbId: req.kbId || "",
+      endpoint: req.path,
+      method: req.method,
+      statusCode: res.statusCode,
+      latencyMs: latency,
+      ip: getClientIp(req) || "",
+      userAgent: req.headers["user-agent"] || ""
+    });
+  });
   next();
 }
 

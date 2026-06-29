@@ -21,7 +21,7 @@ export function TokenManage() {
           setTokens(res.data)
         }
       })
-      .catch(() => message.error('加载失败'))
+      .catch((err) => message.error(err.response?.data?.error || err.message || '加载失败'))
       .finally(() => setLoading(false))
   }
 
@@ -30,8 +30,8 @@ export function TokenManage() {
       await adminApi.revokeToken(id)
       message.success('撤销成功')
       loadTokens()
-    } catch {
-      message.error('撤销失败')
+    } catch (err) {
+      message.error((err as Error).message || '撤销失败')
     }
   }
 
@@ -40,8 +40,8 @@ export function TokenManage() {
       await adminApi.deleteToken(id)
       message.success('删除成功')
       loadTokens()
-    } catch {
-      message.error('删除失败')
+    } catch (err) {
+      message.error((err as Error).message || '删除失败')
     }
   }
 
@@ -59,14 +59,14 @@ export function TokenManage() {
       message.success('添加成功')
       form.resetFields()
       loadTokens()
-    } catch {
-      message.error('添加失败')
+    } catch (err) {
+      message.error((err as Error).message || '添加失败')
     }
   }
 
   const columns = [
     { title: '知识库', dataIndex: 'kb_name', key: 'kb_name' },
-    { title: 'KB ID', dataIndex: 'kb_id', key: 'kb_id', render: (id: number) => id },
+    { title: 'KB ID', dataIndex: 'kb_id', key: 'kb_id' },
     { title: '所有者', dataIndex: 'owner', key: 'owner' },
     {
       title: '权限',
@@ -97,7 +97,7 @@ export function TokenManage() {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: KMToken) => (
         <Space>
           {record.status === 'active' && (
             <Popconfirm
@@ -128,7 +128,18 @@ export function TokenManage() {
         <Form.Item name="kb_name" label="知识库名称" rules={[{ required: true }]}>
           <Input placeholder="知识库名称" />
         </Form.Item>
-        <Form.Item name="kb_id" label="KB ID" rules={[{ required: true, type: 'number' }]}>
+        <Form.Item name="kb_id" label="KB ID" rules={[{
+          required: true,
+          validator: (_: any, value: any) => {
+            if (!value) return Promise.reject('KB ID 不能为空');
+            const num = Number(value);
+            if (isNaN(num) || num <= 0 || !Number.isInteger(num)) {
+              return Promise.reject('KB ID 必须是正整数');
+            }
+            return Promise.resolve();
+          },
+          trigger: 'blur',
+        }]}>
           <Input type="number" placeholder="KB ID" />
         </Form.Item>
         <Form.Item name="token" label="Token" rules={[{ required: true }]}>

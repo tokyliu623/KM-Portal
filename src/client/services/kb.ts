@@ -30,6 +30,15 @@ export interface ContentBody {
   link: string
 }
 
+export interface KBDocument {
+  id: string
+  title: string
+  content: string
+  category?: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface ApiResponse<T> {
   success: boolean
   data?: T
@@ -71,13 +80,13 @@ export const kbApi = {
   verifyAccess: (kbId: string) => api.get<ApiResponse<{ permission: string }>>(`/kb/${kbId}`),
 
   listDocuments: (kbId: string) =>
-    api.get<ApiResponse<{ documents: any[] }>>(`/kb/${kbId}/documents`),
+    api.get<ApiResponse<{ documents: KBDocument[] }>>(`/kb/${kbId}/documents`),
 
   createDocument: (kbId: string, data: { title: string; content: string; category?: string }) =>
-    api.post<ApiResponse<any>>(`/kb/${kbId}/documents`, data),
+    api.post<ApiResponse<KBDocument>>(`/kb/${kbId}/documents`, data),
 
   updateDocument: (kbId: string, docId: string, data: { title?: string; content?: string; category?: string }) =>
-    api.put<ApiResponse<any>>(`/kb/${kbId}/documents/${docId}`, data),
+    api.put<ApiResponse<KBDocument>>(`/kb/${kbId}/documents/${docId}`, data),
 
   deleteDocument: (kbId: string, docId: string) =>
     api.delete<ApiResponse<null>>(`/kb/${kbId}/documents/${docId}`),

@@ -3,7 +3,7 @@ import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 
 const DATA_DIR = path.join(process.cwd(), 'data')
-const STATS_FILE = path.join(DATA_DIR, 'api-stats.json')
+const STATS_FILE = path.join(DATA_DIR, 'api-logs.json')
 
 interface ApiCallRecord {
   id: string
@@ -43,6 +43,8 @@ export async function recordCall(data: Omit<ApiCallRecord, 'id' | 'createdAt'>):
     id: uuidv4(),
     createdAt: new Date().toISOString(),
   })
+  // Retention policy: keep most recent 5000 records after exceeding 10000 limit.
+  // For long-term archival, consider rotating logs to a daily file.
   if (store.calls.length > 10000) {
     store.calls = store.calls.slice(-5000)
   }

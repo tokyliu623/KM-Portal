@@ -16,11 +16,11 @@ export function KBBrowser() {
     setLoading(true)
     try {
       const res = await kbApi.getTree(kbId, parentId)
-      if (res.code === 1) {
+      if (res.success) {
         setTreeData(res.data)
       }
-    } catch {
-      message.error('加载目录树失败')
+    } catch (err) {
+      message.error((err as Error).message || '加载目录树失败')
     } finally {
       setLoading(false)
     }
@@ -44,7 +44,7 @@ export function KBBrowser() {
       title: item.title,
       key: item.id,
       isLeaf: !item.hasChild,
-      children: item.hasChild ? undefined : undefined,
+      children: undefined,
     }))
   }
 
@@ -70,7 +70,7 @@ export function KBBrowser() {
             loadData={async (node) => {
               if (!node.isLeaf && selectedKbId) {
                 const res = await kbApi.getTree(selectedKbId, node.key as number)
-                if (res.code === 1) {
+                if (res.success) {
                   const children = renderTreeNodes(res.data)
                   return children
                 }

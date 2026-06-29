@@ -52,13 +52,17 @@ router.get('/overview', async (_req, res) => {
 
     res.json({ success: true, data: stats })
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch stats' })
+    res.status(500).json({ success: false, error: 'Failed to fetch stats' })
   }
 })
 
 router.get('/daily', async (req, res) => {
   try {
-    const days = parseInt(req.query.days as string) || 7
+    const daysNum = parseInt(req.query.days as string)
+    if (isNaN(daysNum) || daysNum <= 0) {
+      return res.status(400).json({ success: false, error: 'Invalid days parameter' })
+    }
+    const days = daysNum
     const logs = await readLogs()
     const cutoff = new Date()
     cutoff.setDate(cutoff.getDate() - days)
@@ -82,7 +86,7 @@ router.get('/daily', async (req, res) => {
       data: Object.values(dailyStats).sort((a, b) => a.date.localeCompare(b.date)),
     })
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch daily stats' })
+    res.status(500).json({ success: false, error: 'Failed to fetch daily stats' })
   }
 })
 
@@ -112,7 +116,7 @@ router.get('/endpoints', async (_req, res) => {
       data: Object.values(endpointStats).sort((a, b) => b.calls - a.calls),
     })
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch endpoint stats' })
+    res.status(500).json({ success: false, error: 'Failed to fetch endpoint stats' })
   }
 })
 
