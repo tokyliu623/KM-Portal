@@ -7,8 +7,26 @@ cd "$SCRIPT_DIR"
 echo "=== KM-Portal 服务器部署开始 ==="
 echo "时间: $(date '+%Y-%m-%d %H:%M:%S')"
 
+echo ">>> 清理可能的锁定文件..."
+rm -f .git/index.lock FETCH_HEAD
+
+echo ">>> 配置 Git 缓冲区（解决大文件下载问题）..."
+git config --global http.postBuffer 524288000 2>/dev/null || true
+git config --global http.lowSpeedLimit 1000 2>/dev/null || true
+git config --global http.lowSpeedTime 300 2>/dev/null || true
+
 echo ">>> 拉取最新代码..."
-git pull origin main
+MAX_RETRIES=3
+RETRY_COUNT=0
+until git pull origin main; do
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+        echo ">>> 拉取失败，已重试 $MAX_RETRIES 次"
+        exit 1
+    fi
+    echo ">>> 拉取失败，重试中 ($RETRY_COUNT/$MAX_RETRIES)..."
+    sleep 10
+done
 
 echo ">>> 检查静态可执行文件..."
 if [ ! -f "$SCRIPT_DIR/dist/km-portal-linux" ]; then
