@@ -8,7 +8,22 @@ echo "=== KM-Portal 服务器部署开始 ==="
 echo "时间: $(date '+%Y-%m-%d %H:%M:%S')"
 
 echo ">>> 拉取最新代码..."
-git pull origin master
+git pull origin main
+
+echo ">>> 检查 Node.js 环境..."
+if ! command -v node &> /dev/null || node --version | grep -q "GLIBC"; then
+    echo ">>> 安装 nvm 和 Node.js..."
+    export NVM_DIR="$HOME/.nvm"
+    
+    if [ ! -d "$NVM_DIR" ]; then
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+    fi
+    
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    nvm install 18
+    nvm use 18
+    nvm alias default 18
+fi
 
 echo ">>> 安装生产依赖..."
 npm install --production
