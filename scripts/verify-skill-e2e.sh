@@ -105,8 +105,11 @@ LAST_LINE=$(grep -n "^---$" "$SKILL_MD" | tail -1 | cut -d: -f1)
 
 if grep -A 5 "^trigger:" "$SKILL_MD" | grep -q "^  - "; then
   echo "✅ trigger 是 YAML 列表(模块 7 修复生效)"
+elif grep -q "^trigger:\s*\[\s*\]" "$SKILL_MD"; then
+  echo "✅ trigger 是空列表(合法 YAML,v1.7.4 默认值兜底)"
 else
-  echo "⚠️  trigger 不是列表形式(可能 triggerWords 为空)"
+  echo "❌ FAIL: trigger 既不是列表也不是空数组"
+  exit 1
 fi
 
 grep -E '^description: ".*"$' "$SKILL_MD" > /dev/null && echo "✅ description 用双引号包裹" || echo "⚠️  description 未用引号"

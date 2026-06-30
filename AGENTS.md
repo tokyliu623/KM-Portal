@@ -1,7 +1,7 @@
 # KM-Portal AGENTS.md
 
 > 本文件是 KM-Portal 项目的 Agent 工作规范。
-> 最后更新: 2026-06-30 (v1.7.3 Skill 字段兼容修复)
+> 最后更新: 2026-06-30 (v1.7.4 trigger 兜底)
 
 ## 项目概述
 
@@ -383,6 +383,7 @@ build: 构建相关（如 pkg 打包）
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| 1.7.4 | 2026-06-30 | Skill trigger 兜底：skillPackage.ts 新增 DEFAULT_TRIGGER_WORDS（8 个中英文+别名）；buildSkillMd/buildReadme 用 effectiveTriggers；verify-skill-e2e.sh trigger 检测接受空列表+非空列表；新增 skillPackageV174.test.ts 3 测试 |
 | 1.7.3 | 2026-06-30 | Skill 路由字段兼容：抽 getField 到 src/server/utils/fieldCompat.ts；routes/skill.ts 支持 snake_case (kb_id/kb_name)；新增 skillRouteFieldCompat.test.ts 5 个测试；E2E 验证脚本 (scripts/verify-skill-e2e.sh) 8 步验收 |
 | 1.7.2 | 2026-06-30 | E2E 验证脚本：scripts/verify-skill-e2e.sh 8 步端到端验收（健康/创建/下载/解压/frontmatter/结构/兼容/清理）；发现 v1.7.1 Skill 路由字段兼容遗漏 |
 | 1.7.1 | 2026-06-30 | 系统性修复：抽离 src/shared/types/kb.ts 共享类型；KB API 字段名对齐（camelCase）+ 服务端兼容双字段名；翻译失败返回 warning 字段；启动凭证自检日志；新增 /api/diag/translate-health 健康检查；Skill zip 包结构规范化（YAML frontmatter / safeName 统一 / 跳过空 __init__.py）；新增 3 个 Vitest 回归测试（zip 结构/字段兼容/翻译降级）；CI 加 zip 验证步骤；部署脚本 source .env + post-deploy smoke test；AGENTS.md 老问题清单 |
@@ -423,6 +424,7 @@ build: 构建相关（如 pkg 打包）
 - [x] 老问题清单章节（避免重复出现）
 - [x] v1.7.2 E2E 验证脚本 (scripts/verify-skill-e2e.sh, 8 步验收)
 - [x] v1.7.3 Skill 路由字段兼容 (snake_case kb_id/kb_name)
+- [x] v1.7.4 Skill trigger 兜底 (DEFAULT_TRIGGER_WORDS)
 
 ## 老问题清单（v1.7.1 起维护，避免重复出现）
 
@@ -487,6 +489,18 @@ build: 构建相关（如 pkg 打包）
   - 任何新 POST 路由**必须**用 `getField` 兼容双字段名
   - CI 必跑 `kbRouteFieldCompat.test.ts` + `skillRouteFieldCompat.test.ts`
   - 服务器端真实环境验证 ≠ 本地 Vitest 单元测试（这次漏就是 v1.7.1 漏了 skill 路由字段兼容）
+
+### 问题 6：Skill trigger 空列表语义弱（v1.7.1 以来）
+- **症状**：E2E 验证脚本 Step 5 检测 trigger 报"不是列表形式"（虽然 YAML 合法，但语义空）
+- **根因**：`routes/skill.ts:235-252` 的 export 路由传 `triggerWords: []` 给 `buildSkillZip`，SKILL.md 输出 `trigger: []` 空列表
+- **v1.7.4 解决**：
+  1. `skillPackage.ts` 新增 `DEFAULT_TRIGGER_WORDS` 常量（8 个中英文+别名兜底词）
+  2. `buildSkillMd` / `buildReadme` 都用 `effectiveTriggers`（用户传值 > 默认值）
+  3. `verify-skill-e2e.sh` 修 trigger 检测：列表 OR 空数组都算合法
+  4. 新增 `skillPackageV174.test.ts` 3 个测试（空/有值/README）
+- **预防**：
+  - CI 必跑 `skillPackageV174.test.ts`
+  - 未来若需修改兜底词列表，必须同步改 README 渲染逻辑
 
 ## 验证脚本（v1.7.2 起新增）
 
