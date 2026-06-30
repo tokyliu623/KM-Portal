@@ -1,7 +1,7 @@
 # KM-Portal AGENTS.md
 
 > 本文件是 KM-Portal 项目的 Agent 工作规范。
-> 最后更新: 2026-06-30 (v1.7.4 trigger 兜底)
+> 最后更新: 2026-06-30 (v1.7.5 部署脚本修复)
 
 ## 项目概述
 
@@ -383,6 +383,7 @@ build: 构建相关（如 pkg 打包）
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| 1.7.5 | 2026-06-30 | 部署脚本 5 大漏洞修复：新增 verify-deploy.sh 预检 + 重写 deploy-server.sh + AGENTS.md 部署经验章节 |
 | 1.7.4 | 2026-06-30 | Skill trigger 兜底：skillPackage.ts 新增 DEFAULT_TRIGGER_WORDS（8 个中英文+别名）；buildSkillMd/buildReadme 用 effectiveTriggers；verify-skill-e2e.sh trigger 检测接受空列表+非空列表；新增 skillPackageV174.test.ts 3 测试 |
 | 1.7.3 | 2026-06-30 | Skill 路由字段兼容：抽 getField 到 src/server/utils/fieldCompat.ts；routes/skill.ts 支持 snake_case (kb_id/kb_name)；新增 skillRouteFieldCompat.test.ts 5 个测试；E2E 验证脚本 (scripts/verify-skill-e2e.sh) 8 步验收 |
 | 1.7.2 | 2026-06-30 | E2E 验证脚本：scripts/verify-skill-e2e.sh 8 步端到端验收（健康/创建/下载/解压/frontmatter/结构/兼容/清理）；发现 v1.7.1 Skill 路由字段兼容遗漏 |
@@ -425,6 +426,7 @@ build: 构建相关（如 pkg 打包）
 - [x] v1.7.2 E2E 验证脚本 (scripts/verify-skill-e2e.sh, 8 步验收)
 - [x] v1.7.3 Skill 路由字段兼容 (snake_case kb_id/kb_name)
 - [x] v1.7.4 Skill trigger 兜底 (DEFAULT_TRIGGER_WORDS)
+- [x] v1.7.5 部署脚本 5 大漏洞修复 (2026-06-30)
 
 ## 老问题清单（v1.7.1 起维护，避免重复出现）
 
@@ -531,3 +533,56 @@ build: 构建相关（如 pkg 打包）
   - 任何 Skill 包结构调整（zip 内容/frontmatter/目录派生）必须先跑本脚本验证
   - 任何 KB API / Skill API 变更必须先跑本脚本验证兼容性
   - 服务器端真实环境验证 ≠ 本地 Vitest 单元测试（前者验证端到端链路）
+
+## 服务器部署经验（v1.7.5 起维护）
+
+### 部署 5 大漏洞（v1.7.4 验证过程发现）
+
+| # | 问题 | 症状 | 解决方案 |
+|---|------|------|----------|
+| 1 | dubious ownership | `git fetch` 报 "detected dubious ownership" | `git config --global --add safe.directory /data/KM-Portal` |
+| 2 | .git 写权限 | `FETCH_HEAD: Permission denied` | `chown -R sk_sudo:sk_sudo .git` |
+| 3 | .env 读权限 | `source .env: Permission denied` | `chmod 644 .env` |
+| 4 | 网络超时 | `Failed connect to github.com:443` | 重试 + `http.postBuffer 524288000` |
+| 5 | 旧进程残留 | `curl /api/health` 返回旧版本 | `pkill -9 -f km-portal-linux` + 端口空闲检查 |
+
+### 完整部署命令（v1.7.5+ 推荐）
+
+```bash
+# 1. 预检
+git config --global --add safe.directory /data/KM-Portal
+git config --global http.postBuffer 524288000
+curl -fsS --max-time 5 https://github.com > /dev/null || { echo "[FAIL] 无网络"; exit 1; }
+
+# 2. 同步
+cd /data/KM-Portal
+rm -f .git/index.lock FETCH_HEAD
+for i in 1 2 3 4 5; do git fetch origin main && break; sleep 15; done
+git reset --hard origin/main
+
+# 3. 杀进程
+pkill -9 -f km-portal-linux || true
+sleep 3
+lsof -i:5053 > /dev/null 2>&1 && { echo "[FATAL] 端口占用"; exit 1; }
+
+# 4. 修权限
+chmod +x dist/km-portal-linux scripts/verify-skill-e2e.sh
+[ -f .env ] && chmod 644 .env
+
+# 5. 启动
+[ -f .env ] && set -a && . ./.env && set +a
+PORT=5053 nohup ./dist/km-portal-linux > server.log 2>&1 &
+sleep 4
+curl -fsS http://127.0.0.1:5053/api/health
+```
+
+### 验证脚本
+
+- `scripts/verify-deploy.sh`（v1.7.5 新增）：部署前 5 大漏洞预检
+- `scripts/verify-skill-e2e.sh`（v1.7.2 新增）：Skill 包端到端验证
+
+### 服务器权限模型
+
+- sk_sudo: 受限（不能改 root: 文件/进程）
+- root: 全权（必须用 root 跑部署）
+- 网络: github.com:443 偶发 timeout，root + 重试能通
