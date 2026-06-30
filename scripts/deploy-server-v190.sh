@@ -14,9 +14,9 @@
 #
 # 必备:
 #   - /data/KM-Portal 仓库（已 git pull 或即将拉取）
-#   - .env 文件存在（KM_API_KEY 已配置）
+#   - .env 文件存在（缺失会自动从 .env.example 生成）
 #   - 端口 5053 空闲
-#   - 网络可达 github.com:443
+#   - 网络可达 gitlab.vmic.xyz:443
 # ============================================================
 set -e
 
@@ -25,6 +25,7 @@ BRANCH="${BRANCH:-main}"
 SERVICE_PORT="${SERVICE_PORT:-5053}"
 LOG_DIR="${LOG_DIR:-$REPO_DIR}"
 BACKUP_DIR="${BACKUP_DIR:-$REPO_DIR/data/.backup-deploy-$(date +%Y%m%d-%H%M%S)}"
+REMOTE="${REMOTE:-origin}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -49,21 +50,21 @@ log_step "  ✓ safe.directory + postBuffer 已配"
 
 # ==================== 漏洞 5: 网络可达性预检 ====================
 log_step "规避漏洞 5/5: 网络可达性预检"
-if ! curl -fsS --max-time 10 https://github.com > /dev/null 2>&1; then
-    log_warn "github.com 网络不可达,稍后重试 (3 次)"
+if ! curl -fsS --max-time 10 https://gitlab.vmic.xyz > /dev/null 2>&1; then
+    log_warn "gitlab.vmic.xyz 网络不可达,稍后重试 (3 次)"
     for i in 1 2 3; do
         sleep 10
-        if curl -fsS --max-time 10 https://github.com > /dev/null 2>&1; then
+        if curl -fsS --max-time 10 https://gitlab.vmic.xyz > /dev/null 2>&1; then
             log_step "  ✓ 第 $i 次重试网络可达"
             break
         fi
     done
-    if ! curl -fsS --max-time 10 https://github.com > /dev/null 2>&1; then
-        log_fail "github.com 持续不可达,中止部署"
+    if ! curl -fsS --max-time 10 https://gitlab.vmic.xyz > /dev/null 2>&1; then
+        log_fail "gitlab.vmic.xyz 持续不可达,中止部署"
         exit 1
     fi
 else
-    log_step "  ✓ github.com 可达"
+    log_step "  ✓ gitlab.vmic.xyz 可达"
 fi
 
 # ==================== 进入仓库 ====================
@@ -90,10 +91,10 @@ log_step "规避漏洞 3/5: 清理 .git 锁"
 rm -f .git/index.lock FETCH_HEAD
 
 # ==================== 漏洞 4: 网络超时 - git 拉取并切到目标分支 ====================
-log_step "规避漏洞 4/5: git fetch + checkout $BRANCH + reset (5 次重试)"
+log_step "规避漏洞 4/5: git fetch $REMOTE $BRANCH + reset (5 次重试)"
 for i in 1 2 3 4 5; do
-    if git fetch origin "$BRANCH" 2>&1 | tail -3; then
-        log_step "  ✓ git fetch origin $BRANCH 成功 (尝试 $i)"
+    if git fetch "$REMOTE" "$BRANCH" 2>&1 | tail -3; then
+        log_step "  ✓ git fetch $REMOTE $BRANCH 成功 (尝试 $i)"
         break
     fi
     log_warn "  git fetch 失败,等待 15s 后重试 (尝试 $i/5)"
@@ -115,13 +116,13 @@ if [ "$CURRENT_BRANCH" != "$BRANCH" ]; then
     log_step "  ✓ 已切换到 $BRANCH"
 fi
 
-git reset --hard "origin/$BRANCH"
+git reset --hard "$REMOTE/$BRANCH"
 LOCAL_HEAD=$(git rev-parse --short HEAD)
-REMOTE_HEAD=$(git rev-parse --short "origin/$BRANCH")
+REMOTE_HEAD=$(git rev-parse --short "$REMOTE/$BRANCH")
 if [ "$LOCAL_HEAD" = "$REMOTE_HEAD" ]; then
-    log_step "  ✓ git reset --hard origin/$BRANCH 完成 (HEAD=$LOCAL_HEAD)"
+    log_step "  ✓ git reset --hard $REMOTE/$BRANCH 完成 (HEAD=$LOCAL_HEAD)"
 else
-    log_fail "本地 HEAD=$LOCAL_HEAD 与 origin/$BRANCH=$REMOTE_HEAD 不一致"
+    log_fail "本地 HEAD=$LOCAL_HEAD 与 $REMOTE/$BRANCH=$REMOTE_HEAD 不一致"
     exit 1
 fi
 log_step "  ✓ 当前 commit: $(git log -1 --oneline)"
@@ -140,13 +141,20 @@ fi
 log_step "  ✓ km-portal-linux: $KM_SIZE bytes (~$(($KM_SIZE/1024/1024))MB)"
 
 if [ ! -f ".env" ]; then
-    log_warn ".env 不存在,将跳过凭证注入（服务可能 MISSING API key）"
+    log_warn ".env 不存在,尝试从 .env.example 生成"
+    if [ -f ".env.example" ]; then
+        cp .env.example .env
+        log_step "  ✓ 已从 .env.example 生成 .env"
+    else
+        log_fail ".env.example 也不存在,无法继续"
+        exit 1
+    fi
 else
     log_step "  ✓ .env 存在"
-    # 漏洞: .env 权限
-    chmod 644 .env
-    log_step "  ✓ .env 权限 644"
 fi
+# 漏洞: .env 权限（必须可读，进程才能 source）
+chmod 644 .env
+log_step "  ✓ .env 权限 644"
 
 # ==================== 漏洞 5: 旧进程残留 ====================
 log_step "规避漏洞 5/5: 旧进程清理"
@@ -172,6 +180,8 @@ log_step "启动 KM-Portal 服务 (端口 $SERVICE_PORT)"
 chmod +x dist/km-portal-linux
 cd "$REPO_DIR"
 # 关键: 启动时 cwd 必须是仓库根,这样 dotenv.config() 才能找到 .env
+# 同时手动 source 确保 .env 变量在进程环境里（dotenv 会读，但显式 source 更稳）
+[ -f .env ] && set -a && . ./.env && set +a
 nohup ./dist/km-portal-linux > "$LOG_DIR/server.log" 2>&1 &
 SERVICE_PID=$!
 log_step "  ✓ 服务已启动, PID=$SERVICE_PID"
@@ -209,6 +219,12 @@ else
     log_warn "python 未安装,跳过端到端验证 (请手动跑 verify-all-v190.py)"
 fi
 
+# ==================== 清理 GitLab 旧 master 引用 ====================
+log_step "清理 GitLab 旧 master 远程引用 (prune)"
+git remote set-head "$REMOTE" main 2>/dev/null || true
+git remote prune "$REMOTE" 2>/dev/null || true
+log_step "  ✓ git remote 已清理"
+
 # ==================== 总结 ====================
 echo ""
 echo "============================================"
@@ -218,10 +234,12 @@ echo "  Port:          $SERVICE_PORT"
 echo "  Health:        http://127.0.0.1:$SERVICE_PORT/api/health"
 echo "  Server log:    $LOG_DIR/server.log"
 echo "  Data backup:   $BACKUP_DIR"
+echo "  .env source:   $([ -f .env ] && echo '已加载' || echo '未找到')"
 echo ""
 echo "  常用命令:"
 echo "    ps -p $SERVICE_PID              # 查看进程"
 echo "    tail -f $LOG_DIR/server.log     # 实时日志"
 echo "    curl http://127.0.0.1:$SERVICE_PORT/api/health   # 健康检查"
+echo "    curl http://127.0.0.1:$SERVICE_PORT/api/diag/translate-health  # 翻译探针"
 echo "    python3 scripts/verify-all-v190.py                # 端到端验证"
 echo "============================================"
