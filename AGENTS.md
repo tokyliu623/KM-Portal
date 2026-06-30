@@ -1,7 +1,7 @@
 # KM-Portal AGENTS.md
 
 > 本文件是 KM-Portal 项目的 Agent 工作规范。
-> 最后更新: 2026-06-30 (v1.8 交付计划已生成)
+> 最后更新: 2026-06-30 (v1.8.3 运营效果分析已交付)
 
 ## 项目概述
 
@@ -383,6 +383,7 @@ build: 构建相关（如 pkg 打包）
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| 1.8.3 | 2026-06-30 | 运营效果分析：src/server/services/operationStatsService.ts (4 方法：getApiLogStats/getManualKpis/saveManualKpi/generateTrendData/calculateHealthScore) + data/operation-stats.json (KB 维度 KPI 存储) + stats.ts 增 3 端点 (GET /operation/:kbId, POST /operation/:kbId, GET /health/:kbId) + tests/unit/operationStatsService.test.ts (10 测试 4 维度)；TDD 流程：RED 10/10 fail → GREEN 10/10 pass；ESLint + tsc + esbuild EXIT 0 |
 | 1.7.5 | 2026-06-30 | 部署脚本 5 大漏洞修复：新增 verify-deploy.sh 预检 + 重写 deploy-server.sh + AGENTS.md 部署经验章节 |
 | 1.7.4 | 2026-06-30 | Skill trigger 兜底：skillPackage.ts 新增 DEFAULT_TRIGGER_WORDS（8 个中英文+别名）；buildSkillMd/buildReadme 用 effectiveTriggers；verify-skill-e2e.sh trigger 检测接受空列表+非空列表；新增 skillPackageV174.test.ts 3 测试 |
 | 1.7.3 | 2026-06-30 | Skill 路由字段兼容：抽 getField 到 src/server/utils/fieldCompat.ts；routes/skill.ts 支持 snake_case (kb_id/kb_name)；新增 skillRouteFieldCompat.test.ts 5 个测试；E2E 验证脚本 (scripts/verify-skill-e2e.sh) 8 步验收 |

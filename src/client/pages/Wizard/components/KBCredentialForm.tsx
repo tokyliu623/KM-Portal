@@ -1,19 +1,28 @@
 import { Form, Input, Button, Card, Space, Typography, message } from 'antd'
-import type { KBCredential } from '../../services/wizard'
+import type { KBCredential } from '../../../services/wizard'
+import { useWizardStore } from '../hooks/useWizard'
 
 const { Text } = Typography
 
 interface KBCredentialFormProps {
-  onSubmit: (credential: KBCredential) => Promise<void>
+  onSubmit?: (credential: KBCredential) => Promise<void> | void
+  onSuccess?: (credential: KBCredential) => void
   loading?: boolean
 }
 
-export function KBCredentialForm({ onSubmit, loading }: KBCredentialFormProps) {
+export function KBCredentialForm({ onSubmit, onSuccess, loading }: KBCredentialFormProps) {
   const [form] = Form.useForm()
 
   const handleFinish = async (values: KBCredential) => {
     try {
-      await onSubmit(values)
+      if (onSubmit) {
+        await onSubmit(values)
+      }
+      const setCredential = useWizardStore.getState().setCredential
+      setCredential(values)
+      if (onSuccess) {
+        onSuccess(values)
+      }
     } catch {
       message.error('凭证验证失败')
     }

@@ -34,13 +34,19 @@ export interface DiagnoseResult {
   summary: string
 }
 
+export type ProductType = 'skill' | 'mcp' | 'ai_template' | 'openapi' | 'tree'
+
 export interface ProductItem {
-  type: 'skill' | 'mcp' | 'template' | 'openapi' | 'structure'
+  type: ProductType
   name: string
   description: string
   icon: string
   downloadUrl?: string
   content?: string
+  mimeType?: string
+  filename?: string
+  status?: 'pending' | 'done' | 'error'
+  error?: string
 }
 
 export interface GenerateResult {
@@ -64,6 +70,32 @@ export interface ApiResponse<T> {
   warning?: string
 }
 
+export interface McpConfigFile {
+  client: string
+  filename: string
+  mimeType: string
+  content: string
+}
+
+export interface McpConfigsResponse {
+  kbId: number
+  kbName: string
+  files: McpConfigFile[]
+  installHints: Record<string, string>
+}
+
+export interface AiPromptFile {
+  type: 'writing' | 'reading' | 'qa' | 'retrieval' | 'command'
+  filename: string
+  content: string
+}
+
+export interface AiPromptsResponse {
+  kbId: number
+  kbName: string
+  files: AiPromptFile[]
+}
+
 export const wizardApi = {
   init: (credential: KBCredential) =>
     api.post<ApiResponse<KBInfo>>('/wizard/init', credential),
@@ -76,4 +108,25 @@ export const wizardApi = {
 
   getStatus: (jobId: string) =>
     api.get<ApiResponse<JobStatus>>(`/wizard/status/${jobId}`),
+
+  getMcpConfigs: (kbId: number, kbName: string, accessToken: string) =>
+    api.post<ApiResponse<McpConfigsResponse>>('/wizard/mcp-configs', {
+      kbId,
+      kbName,
+      accessToken,
+    }),
+
+  getAiPrompts: (kbId: number, kbName: string, accessToken: string, description?: string) =>
+    api.post<ApiResponse<AiPromptsResponse>>('/wizard/ai-prompts', {
+      kbId,
+      kbName,
+      accessToken,
+      description,
+    }),
+
+  getOpenApiSpecUrl: (kbId: number, kbName: string) =>
+    `/api/wizard/openapi.json?kbId=${kbId}&kbName=${encodeURIComponent(kbName)}`,
+
+  getSwaggerUrl: (kbId: number, kbName: string) =>
+    `/api/wizard/swagger?kbId=${kbId}&kbName=${encodeURIComponent(kbName)}`,
 }

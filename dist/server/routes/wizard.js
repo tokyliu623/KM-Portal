@@ -4,6 +4,9 @@ import { getField } from '../utils/fieldCompat.js';
 import { KMApiError } from '../services/kmApiClient.js';
 import { buildSkillZip } from '../services/skillPackage.js';
 import { buildTreeFromFlat, visualizeTree, exportAsMarkdown, getDocCount } from '../services/kbTreeVisualizer.js';
+import { generateOpenApiSpec, generateSwaggerHtml } from '../services/openApiSpecGenerator.js';
+import { generateAllMcpConfigs } from '../services/mcpConfigGenerator.js';
+import { generateAllAiPrompts } from '../services/aiPromptTemplateGenerator.js';
 const router = Router();
 const jobs = new Map();
 setInterval(() => {
@@ -186,18 +189,13 @@ router.post('/generate', async (req, res, next) => {
                 job.progress = 40;
                 const mcpIndex = job.products.findIndex(p => p.type === 'mcp');
                 try {
-                    const mcpConfig = {
-                        mcpServers: {
-                            'vivo-knowledge': {
-                                url: 'https://wiki.vivo.xyz/api/knowledge/mcp/rpc',
-                                headers: {
-                                    Authorization: `Bearer ${tokenStr}`,
-                                    'MCP-Protocol-Version': '2025-03-26',
-                                },
-                                transport: 'streamable-http',
-                            },
-                        },
-                    };
+                    // v1.8.1 抽离到 mcpConfigGenerator service（向后兼容：data 仍为 JSON 字符串）
+                    const allMcpConfigs = generateAllMcpConfigs({
+                        kbId: kbIdNum,
+                        kbName: kbNameStr,
+                        accessToken: tokenStr,
+                    });
+                    const mcpConfig = JSON.parse(allMcpConfigs.claudeDesktop.content);
                     job.products[mcpIndex] = {
                         type: 'mcp',
                         name: 'MCP 配置',
@@ -235,7 +233,13 @@ router.post('/generate', async (req, res, next) => {
                 job.progress = 80;
                 const openapiIndex = job.products.findIndex(p => p.type === 'openapi');
                 try {
-                    const openapiSpec = generateOpenApiSpec(kbNameStr, kbIdNum);
+                    const openapiObj = generateOpenApiSpec({
+                        kbId: kbIdNum,
+                        kbName: kbNameStr,
+                        baseUrl: process.env.WIKI_BASE_URL || 'https://wiki.vivo.xyz',
+                        accessToken: tokenStr,
+                    });
+                    const openapiSpec = JSON.stringify(openapiObj, null, 2);
                     job.products[openapiIndex] = {
                         type: 'openapi',
                         name: 'OpenAPI 规范',
@@ -286,6 +290,50 @@ router.post('/generate', async (req, res, next) => {
         next(error);
     }
 });
+router.post('/ai-prompts', async (req, res, next) => {
+    try {
+        const kbId = getField(req.body, 'kbId', 'kb_id');
+        const kbName = getField(req.body, 'kbName', 'kb_name');
+        const accessToken = getField(req.body, 'accessToken', 'token');
+        const description = getField(req.body, 'description', 'desc');
+        if (!kbId) {
+            res.status(400).json({ success: false, error: 'kbId is required' });
+            return;
+        }
+        if (!kbName) {
+            res.status(400).json({ success: false, error: 'kbName is required' });
+            return;
+        }
+        if (!accessToken) {
+            res.status(400).json({ success: false, error: 'accessToken is required' });
+            return;
+        }
+        const kbIdNum = Number(kbId);
+        if (isNaN(kbIdNum) || kbIdNum <= 0) {
+            res.status(400).json({ success: false, error: 'Invalid kbId: must be a positive number' });
+            return;
+        }
+        const input = {
+            kbId: kbIdNum,
+            kbName: String(kbName),
+            accessToken: String(accessToken),
+            description: description ? String(description) : undefined,
+        };
+        const templates = generateAllAiPrompts(input);
+        res.json({
+            success: true,
+            data: {
+                kbId: kbIdNum,
+                kbName: String(kbName),
+                count: templates.length,
+                templates,
+            },
+        });
+    }
+    catch (err) {
+        next(err);
+    }
+});
 router.get('/status/:jobId', (req, res) => {
     const { jobId } = req.params;
     const job = jobs.get(jobId);
@@ -302,318 +350,181 @@ router.get('/status/:jobId', (req, res) => {
     };
     res.json({ success: true, data: response });
 });
+// v1.8.1 新增：独立下载 4 客户端 MCP 配置
+// POST /api/wizard/mcp-configs
+// body: { kbId, kbName, accessToken }
+// 返回 4 个文件 (filename + base64 content) + 安装说明
+router.post('/mcp-configs', (req, res, next) => {
+    try {
+        const kbId = getField(req.body, 'kbId', 'kb_id');
+        const kbName = getField(req.body, 'kbName', 'kb_name');
+        const accessToken = getField(req.body, 'accessToken', 'token');
+        if (!kbId) {
+            res.status(400).json({ success: false, error: 'kbId is required' });
+            return;
+        }
+        if (!kbName) {
+            res.status(400).json({ success: false, error: 'kbName is required' });
+            return;
+        }
+        if (!accessToken) {
+            res.status(400).json({ success: false, error: 'accessToken is required' });
+            return;
+        }
+        const kbIdNum = Number(kbId);
+        if (isNaN(kbIdNum) || kbIdNum <= 0) {
+            res.status(400).json({ success: false, error: 'Invalid kbId: must be a positive number' });
+            return;
+        }
+        const allConfigs = generateAllMcpConfigs({
+            kbId: kbIdNum,
+            kbName: String(kbName),
+            accessToken: String(accessToken),
+        });
+        const files = Object.entries(allConfigs).map(([client, cfg]) => ({
+            client,
+            filename: cfg.filename,
+            mimeType: cfg.mimeType,
+            content: Buffer.from(cfg.content, 'utf-8').toString('base64'),
+        }));
+        res.json({
+            success: true,
+            data: {
+                kbId: kbIdNum,
+                kbName: String(kbName),
+                files,
+                installHints: {
+                    claudeDesktop: '保存为 ~/Library/Application Support/Claude/claude_desktop_config.json',
+                    cursor: '保存为 .cursor/mcp.json (项目根目录)',
+                    continue: '保存为 .continue/mcpServers/mcp.json',
+                    cline: '保存为 .vscode/cline_mcp_settings.json',
+                },
+            },
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+});
 function generateAiTemplates(kbName, kbId) {
-    const templates = [
-        {
-            name: '文档写作助手',
-            category: 'writing',
-            content: `你是一个专业的文档写作助手，擅长帮助用户撰写高质量的文档。
-
-请根据用户提供的关键词或主题，参考知识库「${kbName}」(ID: ${kbId}) 中的相关内容，生成结构清晰、内容准确的文档。
-
-请遵循以下格式：
-1. 标题
-2. 概述
-3. 详细内容
-4. 总结
-
-开始写作前，请先检索知识库中的相关文档作为参考。`,
-        },
-        {
-            name: '文档阅读助手',
-            category: 'reading',
-            content: `你是一个专业的文档阅读助手，擅长帮助用户理解和总结文档内容。
-
-请根据用户提供的文档或主题，从知识库「${kbName}」(ID: ${kbId}) 中检索相关内容，并提供：
-1. 文档摘要
-2. 关键要点
-3. 相关背景知识
-4. 进一步阅读建议`,
-        },
-        {
-            name: '知识检索助手',
-            category: 'search',
-            content: `你是一个专业的知识检索助手，擅长从知识库中精准检索用户需要的信息。
-
-请根据用户的查询，从知识库「${kbName}」(ID: ${kbId}) 中检索相关内容，并提供：
-1. 相关文档列表
-2. 每个文档的相关度评分
-3. 关键内容摘要
-4. 文档链接`,
-        },
-        {
-            name: '结构化指令模板',
-            category: 'template',
-            content: `请使用以下结构化指令模板生成回答：
-
-【背景】
-{描述任务背景}
-
-【目标】
-{明确回答目标}
-
-【约束条件】
-{列出限制条件}
-
-【输出格式】
-{指定输出格式}
-
-【参考知识】
-请从知识库「${kbName}」(ID: ${kbId}) 中检索相关内容作为参考。`,
-        },
-        {
-            name: '知识库问答',
-            category: 'qa',
-            content: `你是一个专业的知识库问答助手，基于知识库「${kbName}」(ID: ${kbId}) 回答用户问题。
-
-请遵循以下流程：
-1. 理解用户问题
-2. 检索知识库相关内容
-3. 综合分析后给出准确回答
-4. 注明信息来源
-
-如果知识库中没有相关信息，请明确告知用户。`,
-        },
-    ];
+    // v1.8.2: 委托给 aiPromptTemplateGenerator（5 类 .md 模板）
+    // 保留旧 JSON 格式以兼容现有前端 WizardProduct.data
+    const input = { kbId, kbName, accessToken: '' };
+    const all = generateAllAiPrompts(input);
+    const templates = all.map((t) => {
+        const categoryMap = {
+            writing: 'writing',
+            reading: 'reading',
+            qa: 'qa',
+            retrieval: 'search',
+            command: 'template',
+        };
+        const nameMap = {
+            writing: '文档写作助手',
+            reading: '文档阅读助手',
+            qa: '知识库问答',
+            retrieval: '知识检索助手',
+            command: '结构化指令模板',
+        };
+        return {
+            name: nameMap[t.type] || t.type,
+            category: categoryMap[t.type] || t.type,
+            content: t.content,
+        };
+    });
     return JSON.stringify(templates, null, 2);
 }
-function generateOpenApiSpec(kbName, kbId) {
-    const spec = {
-        openapi: '3.0.3',
-        info: {
-            title: `${kbName} - Knowledge Base API`,
-            description: `OpenAPI specification for knowledge base "${kbName}" (ID: ${kbId})`,
-            version: '1.0.0',
-        },
-        servers: [
-            {
-                url: 'https://wiki.vivo.xyz',
-                description: 'Production',
-            },
-        ],
-        paths: {
-            '/api/knowledge/v1/openapi/kb/{kbId}/info': {
-                get: {
-                    operationId: 'getKBInfo',
-                    summary: '获取知识库信息',
-                    tags: ['Knowledge Base'],
-                    parameters: [
-                        {
-                            name: 'kbId',
-                            in: 'path',
-                            required: true,
-                            schema: { type: 'integer' },
-                            description: '知识库 ID',
-                        },
-                    ],
-                    responses: {
-                        '200': {
-                            description: '成功',
-                            content: {
-                                'application/json': {
-                                    schema: {
-                                        type: 'object',
-                                        properties: {
-                                            kbId: { type: 'integer' },
-                                            kbName: { type: 'string' },
-                                            effectivePermType: { type: 'string' },
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-            '/api/knowledge/v1/openapi/kb/{kbId}/tree': {
-                get: {
-                    operationId: 'getKBTree',
-                    summary: '获取知识库目录树',
-                    tags: ['Knowledge Base'],
-                    parameters: [
-                        {
-                            name: 'kbId',
-                            in: 'path',
-                            required: true,
-                            schema: { type: 'integer' },
-                            description: '知识库 ID',
-                        },
-                    ],
-                    responses: {
-                        '200': {
-                            description: '成功',
-                            content: {
-                                'application/json': {
-                                    schema: {
-                                        type: 'object',
-                                        properties: {
-                                            items: {
-                                                type: 'array',
-                                                items: {
-                                                    type: 'object',
-                                                    properties: {
-                                                        id: { type: 'integer' },
-                                                        title: { type: 'string' },
-                                                        parentId: { type: 'integer', nullable: true },
-                                                        hasChild: { type: 'boolean' },
-                                                    },
-                                                },
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-            '/api/knowledge/v1/openapi/kb/{kbId}/document/{docId}': {
-                get: {
-                    operationId: 'getKBDocument',
-                    summary: '获取文档内容',
-                    tags: ['Knowledge Base'],
-                    parameters: [
-                        {
-                            name: 'kbId',
-                            in: 'path',
-                            required: true,
-                            schema: { type: 'integer' },
-                        },
-                        {
-                            name: 'docId',
-                            in: 'path',
-                            required: true,
-                            schema: { type: 'integer' },
-                        },
-                    ],
-                    responses: {
-                        '200': {
-                            description: '成功',
-                            content: {
-                                'application/json': {
-                                    schema: {
-                                        type: 'object',
-                                        properties: {
-                                            contentId: { type: 'integer' },
-                                            title: { type: 'string' },
-                                            content: { type: 'string' },
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-            '/api/knowledge/v1/openapi/kb/{kbId}/contents/create': {
-                post: {
-                    operationId: 'createContent',
-                    summary: '创建文档',
-                    tags: ['Knowledge Base'],
-                    parameters: [
-                        {
-                            name: 'kbId',
-                            in: 'path',
-                            required: true,
-                            schema: { type: 'integer' },
-                        },
-                    ],
-                    requestBody: {
-                        required: true,
-                        content: {
-                            'application/json': {
-                                schema: {
-                                    type: 'object',
-                                    required: ['title', 'content'],
-                                    properties: {
-                                        title: { type: 'string' },
-                                        content: { type: 'string' },
-                                        contentType: { type: 'string', default: 'markdown' },
-                                        parentId: { type: 'integer' },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                    responses: {
-                        '200': {
-                            description: '成功',
-                            content: {
-                                'application/json': {
-                                    schema: {
-                                        type: 'object',
-                                        properties: {
-                                            contentId: { type: 'integer' },
-                                            link: { type: 'string' },
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-            '/api/knowledge/v1/openapi/kb/{kbId}/contents/update': {
-                post: {
-                    operationId: 'updateContent',
-                    summary: '更新文档',
-                    tags: ['Knowledge Base'],
-                    parameters: [
-                        {
-                            name: 'kbId',
-                            in: 'path',
-                            required: true,
-                            schema: { type: 'integer' },
-                        },
-                    ],
-                    requestBody: {
-                        required: true,
-                        content: {
-                            'application/json': {
-                                schema: {
-                                    type: 'object',
-                                    required: ['contentId', 'content'],
-                                    properties: {
-                                        contentId: { type: 'integer' },
-                                        title: { type: 'string' },
-                                        content: { type: 'string' },
-                                        contentType: { type: 'string', default: 'markdown' },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                    responses: {
-                        '200': {
-                            description: '成功',
-                            content: {
-                                'application/json': {
-                                    schema: {
-                                        type: 'object',
-                                        properties: {
-                                            contentId: { type: 'integer' },
-                                            link: { type: 'string' },
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-        },
-        components: {
-            securitySchemes: {
-                bearerAuth: {
-                    type: 'http',
-                    scheme: 'bearer',
-                    bearerFormat: 'JWT',
-                    description: `accessToken for KB ${kbId}`,
-                },
-            },
-        },
-        security: [{ bearerAuth: [] }],
-    };
-    return JSON.stringify(spec, null, 2);
-}
+router.get('/openapi.json', (req, res, next) => {
+    try {
+        const kbIdRaw = req.query.kbId ?? req.query.kb_id;
+        const kbNameRaw = req.query.kbName ?? req.query.kb_name;
+        const tokenRaw = req.query.token ?? req.query.accessToken;
+        if (!kbIdRaw) {
+            res.status(400).json({ success: false, error: 'kbId is required' });
+            return;
+        }
+        if (!kbNameRaw) {
+            res.status(400).json({ success: false, error: 'kbName is required' });
+            return;
+        }
+        const kbIdNum = Number(kbIdRaw);
+        if (isNaN(kbIdNum) || kbIdNum <= 0) {
+            res.status(400).json({ success: false, error: 'Invalid kbId: must be a positive number' });
+            return;
+        }
+        const spec = generateOpenApiSpec({
+            kbId: kbIdNum,
+            kbName: String(kbNameRaw),
+            baseUrl: process.env.WIKI_BASE_URL || 'https://wiki.vivo.xyz',
+            accessToken: tokenRaw ? String(tokenRaw) : '',
+        });
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.json(spec);
+    }
+    catch (error) {
+        next(error);
+    }
+});
+router.get('/swagger', (req, res, next) => {
+    try {
+        const kbIdRaw = req.query.kbId ?? req.query.kb_id;
+        const kbNameRaw = req.query.kbName ?? req.query.kb_name;
+        if (!kbIdRaw) {
+            res.status(400).json({ success: false, error: 'kbId is required' });
+            return;
+        }
+        const kbIdNum = Number(kbIdRaw);
+        if (isNaN(kbIdNum) || kbIdNum <= 0) {
+            res.status(400).json({ success: false, error: 'Invalid kbId: must be a positive number' });
+            return;
+        }
+        const title = `${kbNameRaw ? String(kbNameRaw) : 'KB ' + kbIdNum} - API Docs`;
+        const specUrl = `/api/wizard/openapi.json?kbId=${kbIdNum}${kbNameRaw ? `&kbName=${encodeURIComponent(String(kbNameRaw))}` : ''}`;
+        const html = generateSwaggerHtml(specUrl, title);
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(html);
+    }
+    catch (error) {
+        next(error);
+    }
+});
+router.post('/ai-prompts', (req, res, next) => {
+    try {
+        const kbId = getField(req.body, 'kbId', 'kb_id');
+        const kbName = getField(req.body, 'kbName', 'kb_name');
+        const accessToken = getField(req.body, 'accessToken', 'token');
+        const description = getField(req.body, 'description', 'desc');
+        if (!kbId) {
+            res.status(400).json({ success: false, error: 'kbId is required' });
+            return;
+        }
+        if (!kbName) {
+            res.status(400).json({ success: false, error: 'kbName is required' });
+            return;
+        }
+        const kbIdNum = Number(kbId);
+        if (isNaN(kbIdNum) || kbIdNum <= 0) {
+            res.status(400).json({ success: false, error: 'Invalid kbId' });
+            return;
+        }
+        const all = generateAllAiPrompts({
+            kbId: kbIdNum,
+            kbName: String(kbName),
+            description: description ? String(description) : undefined,
+            accessToken: accessToken ? String(accessToken) : '',
+        });
+        const files = all.map((t) => ({
+            type: t.type,
+            filename: t.filename,
+            content: t.content,
+        }));
+        res.json({
+            success: true,
+            data: { kbId: kbIdNum, kbName: String(kbName), files },
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+});
 export default router;

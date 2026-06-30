@@ -20,7 +20,8 @@ const menuItems = [
   { key: '/editor', icon: <EditOutlined />, label: '文档编辑器' },
   { key: '/skill-gen', icon: <ThunderboltOutlined />, label: 'Skill 生成' },
   { key: '/api-docs', icon: <ApiOutlined />, label: 'API 文档' },
-  { key: '/wizard', icon: <RocketOutlined />, label: '向导' },
+  { key: '/wizard', icon: <RocketOutlined />, label: 'Workflow 向导' },
+  { key: '/km-studio', icon: <RocketOutlined />, label: 'KM Studio' },
 ]
 
 export function Layout() {

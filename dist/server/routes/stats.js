@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { operationStatsService } from '../services/operationStatsService.js';
 const router = Router();
 const DATA_DIR = path.join(process.cwd(), 'data');
 const LOGS_FILE = path.join(DATA_DIR, 'api-logs.json');
@@ -91,6 +92,64 @@ router.get('/endpoints', async (_req, res) => {
     }
     catch (error) {
         res.status(500).json({ success: false, error: 'Failed to fetch endpoint stats' });
+    }
+});
+router.get('/operation/:kbId', async (req, res) => {
+    try {
+        const { kbId } = req.params;
+        const days = parseInt(req.query.days) || 7;
+        const [apiSummary, kpis] = await Promise.all([
+            operationStatsService.getApiLogStats(days),
+            operationStatsService.getManualKpis(kbId, days),
+        ]);
+        const trend = operationStatsService.generateTrendData(kpis);
+        res.json({
+            success: true,
+            data: {
+                kbId,
+                days,
+                apiLog: apiSummary,
+                kpis,
+                trend,
+            },
+        });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to fetch operation stats' });
+    }
+});
+router.post('/operation/:kbId', async (req, res) => {
+    try {
+        const { kbId } = req.params;
+        const body = req.body;
+        if (!body || !body.date) {
+            return res.status(400).json({ success: false, error: 'date is required' });
+        }
+        const entry = {
+            date: body.date,
+            uv: Number(body.uv) || 0,
+            pv: Number(body.pv) || 0,
+            conversionRate: body.conversionRate !== undefined ? Number(body.conversionRate) : undefined,
+            satisfaction: body.satisfaction !== undefined ? Number(body.satisfaction) : undefined,
+            customMetrics: body.customMetrics,
+        };
+        await operationStatsService.saveManualKpi(kbId, entry);
+        res.json({ success: true, data: entry });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to save KPI' });
+    }
+});
+router.get('/health/:kbId', async (req, res) => {
+    try {
+        const { kbId } = req.params;
+        const days = parseInt(req.query.days) || 7;
+        const kpis = await operationStatsService.getManualKpis(kbId, days);
+        const score = operationStatsService.calculateHealthScore(kpis);
+        res.json({ success: true, data: { kbId, days, ...score } });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to compute health score' });
     }
 });
 export default router;
