@@ -1,37 +1,98 @@
+import { promises as fs } from 'fs';
+import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-// NOTE: This store uses in-memory storage only.
-// Data is lost on server restart. For production, implement file-based or database persistence.
-const keys = new Map();
+const DEFAULT_DATA_DIR = path.join(process.cwd(), 'data');
+const DEFAULT_API_KEYS_FILE = path.join(DEFAULT_DATA_DIR, 'api-keys.json');
+const locks = new Set();
+async function withLock(key, fn) {
+    while (locks.has(key)) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    locks.add(key);
+    try {
+        return await fn();
+    }
+    finally {
+        locks.delete(key);
+    }
+}
+function resolveFilePath() {
+    if (process.env.KM_API_KEYS_FILE) {
+        return process.env.KM_API_KEYS_FILE;
+    }
+    return DEFAULT_API_KEYS_FILE;
+}
+async function readStore(filePath) {
+    try {
+        const content = await fs.readFile(filePath, 'utf-8');
+        return JSON.parse(content);
+    }
+    catch {
+        return { keys: [] };
+    }
+}
+async function writeStore(filePath, store) {
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
+    await fs.writeFile(filePath, JSON.stringify(store, null, 2), 'utf-8');
+}
 export const apiKeyStore = {
-    create(name, key) {
+    async create(name, key) {
         if (!name || typeof name !== 'string' || name.trim().length === 0) {
             throw new Error('Invalid name: name is required and must be a non-empty string');
         }
         if (!key || typeof key !== 'string' || key.length < 10) {
             throw new Error('Invalid API key: key must be at least 10 characters');
         }
-        const apiKey = {
-            id: uuidv4(),
-            name,
-            key,
-            createdAt: new Date().toISOString(),
-        };
-        keys.set(apiKey.id, apiKey);
-        return apiKey;
+        return withLock('apikey', async () => {
+            const filePath = resolveFilePath();
+            const store = await readStore(filePath);
+            const apiKey = {
+                id: uuidv4(),
+                name: name.trim(),
+                key,
+                createdAt: new Date().toISOString(),
+            };
+            store.keys.push(apiKey);
+            await writeStore(filePath, store);
+            return apiKey;
+        });
     },
-    findAll() {
-        return Array.from(keys.values());
+    async findAll() {
+        const filePath = resolveFilePath();
+        const store = await readStore(filePath);
+        return store.keys;
     },
-    findById(id) {
-        return keys.get(id);
+    async findById(id) {
+        const filePath = resolveFilePath();
+        const store = await readStore(filePath);
+        return store.keys.find((k) => k.id === id);
     },
-    delete(id) {
-        return keys.delete(id);
+    async findByKey(key) {
+        const filePath = resolveFilePath();
+        const store = await readStore(filePath);
+        return store.keys.find((k) => k.key === key);
     },
-    updateLastUsed(id) {
-        const key = keys.get(id);
-        if (key) {
-            key.lastUsed = new Date().toISOString();
-        }
+    async delete(id) {
+        return withLock('apikey', async () => {
+            const filePath = resolveFilePath();
+            const store = await readStore(filePath);
+            const index = store.keys.findIndex((k) => k.id === id);
+            if (index === -1)
+                return false;
+            store.keys.splice(index, 1);
+            await writeStore(filePath, store);
+            return true;
+        });
+    },
+    async updateLastUsed(id) {
+        return withLock('apikey', async () => {
+            const filePath = resolveFilePath();
+            const store = await readStore(filePath);
+            const key = store.keys.find((k) => k.id === id);
+            if (key) {
+                key.lastUsed = new Date().toISOString();
+                await writeStore(filePath, store);
+            }
+        });
     },
 };

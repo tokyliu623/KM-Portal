@@ -7,6 +7,11 @@ const LLM_API_URL = process.env.LLM_API_URL || 'http://jiuwen-api.vmic.xyz/v1/ch
 const LLM_API_KEY = process.env.LLM_API_KEY || ''
 const LLM_BOT_ID = process.env.LLM_BOT_ID || ''
 
+interface TranslateResponse {
+  answer?: string
+  conversation_id?: string
+}
+
 interface TranslateSession {
   conversationId: string | null
   lastUsed: number
@@ -60,9 +65,9 @@ export async function translateToEnglish(prompt: string, kbId: string): Promise<
     { timeout: 35000 }
   )
 
-  let data: any
+  let data: TranslateResponse
   try {
-    data = JSON.parse(stdout)
+    data = JSON.parse(stdout) as TranslateResponse
   } catch {
     return asciiFallback(prompt)
   }
@@ -89,7 +94,7 @@ export async function translateToEnglish(prompt: string, kbId: string): Promise<
   return asciiFallback(prompt)
 }
 
-function sanitizeEnglish(s: string): string {
+export function sanitizeEnglish(s: string): string {
   return s
     .replace(/[\\/:*?"<>|]/g, '')
     .replace(/\s+/g, ' ')

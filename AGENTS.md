@@ -383,6 +383,7 @@ build: 构建相关（如 pkg 打包）
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| 1.7.0 | 2026-06-30 | 安全合规 + 可观测性：清理 .env.example 硬编码密钥；translator.ts 类型修复（移除 any）；删除未引用 auth 中间件；apiKeyStore 改为文件持久化 + 文件锁；axios 拦截器按 HTTP 状态码细分提示；新增 Vitest 单元测试 + Playwright E2E + GitHub Actions CI；新增 .editorconfig / LICENSE / 根目录 README.md；RELEASE-NOTES 同步 v1.6 |
 | 1.6.0 | 2026-06-29 | 修复 Skill 导出仅生成 .md 问题（改为完整 zip 安装包）；修复 KBBrowser "资源不存在"（新增后端代理路由）；新增 Token 编辑 Modal；新增 axios 统一错误拦截；新增 DataState 组件；新增 KB 内容预览 |
 | 1.5.0 | 2026-06-29 | 修复 Express Router 路由匹配问题，使用 app.use 直接挂载路由 |
 | 1.4.  | 2026-06-29 | 添加 pkg 静态打包支持，解决 GLIBC 兼容性问题 |
@@ -406,8 +407,12 @@ build: 构建相关（如 pkg 打包）
 
 ## 待办事项
 
-- [ ] 服务器部署验证 ✅ (2026-06-29)
+- [x] 服务器部署验证 (2026-06-29)
 - [ ] 权限控制完善
-- [ ] Skill 生成器优化
-- [ ] 单元测试添加
-- [ ] E2E 测试添加
+- [x] 单元测试添加 (2026-06-30, Vitest)
+- [x] E2E 测试添加 (2026-06-30, Playwright + e2e-verify.ps1)
+- [x] CI/CD (2026-06-30, GitHub Actions)
+- [x] README.md 根目录入口 (2026-06-30)
+- [x] LICENSE (2026-06-30, MIT)
+- [x] .editorconfig (2026-06-30)
+- [x] 密钥硬编码清理 (2026-06-30, 需用户在平台轮换)
