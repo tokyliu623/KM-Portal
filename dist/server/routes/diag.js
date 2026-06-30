@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { tokenStore } from '../services/tokenStore.js';
+import { translatorHealthCheck, LLM_API_URL, LLM_BOT_ID, LLM_API_KEY } from '../services/translator.js';
 const router = Router();
 router.get('/health', (_req, res) => {
     res.json({
@@ -68,5 +69,20 @@ router.post('/verify', async (req, res) => {
     catch (error) {
         res.status(500).json({ success: false, error: 'Verification failed' });
     }
+});
+// v1.7.1 翻译健康检查
+router.get('/translate-health', async (_req, res) => {
+    const result = await translatorHealthCheck();
+    res.json({
+        success: true,
+        data: {
+            llm_configured: !!LLM_API_KEY,
+            llm_url: LLM_API_URL,
+            bot_id: LLM_BOT_ID || 'not set',
+            reachable: result.reachable,
+            latency_ms: result.latencyMs,
+            error: result.error,
+        },
+    });
 });
 export default router;

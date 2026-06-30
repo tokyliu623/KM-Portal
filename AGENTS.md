@@ -1,7 +1,7 @@
 # KM-Portal AGENTS.md
 
 > 本文件是 KM-Portal 项目的 Agent 工作规范。
-> 最后更新: 2026-06-29
+> 最后更新: 2026-06-30
 
 ## 项目概述
 
@@ -384,6 +384,7 @@ build: 构建相关（如 pkg 打包）
 | 版本 | 日期 | 变更 |
 |------|------|------|
 | 1.7.0 | 2026-06-30 | 安全合规 + 可观测性：清理 .env.example 硬编码密钥；translator.ts 类型修复（移除 any）；删除未引用 auth 中间件；apiKeyStore 改为文件持久化 + 文件锁；axios 拦截器按 HTTP 状态码细分提示；新增 Vitest 单元测试 + Playwright E2E + GitHub Actions CI；新增 .editorconfig / LICENSE / 根目录 README.md；RELEASE-NOTES 同步 v1.6 |
+| 1.7.1 | 2026-06-30 | 系统性修复：抽离 src/shared/types/kb.ts 共享类型；KB API 字段名对齐（camelCase）+ 服务端兼容双字段名；翻译失败返回 warning 字段；启动凭证自检日志；新增 /api/diag/translate-health 健康检查；Skill zip 包结构规范化（YAML frontmatter / safeName 统一 / 跳过空 __init__.py）；新增 3 个 Vitest 回归测试（zip 结构/字段兼容/翻译降级）；CI 加 zip 验证步骤；部署脚本 source .env + post-deploy smoke test；AGENTS.md 老问题清单 |
 | 1.6.0 | 2026-06-29 | 修复 Skill 导出仅生成 .md 问题（改为完整 zip 安装包）；修复 KBBrowser "资源不存在"（新增后端代理路由）；新增 Token 编辑 Modal；新增 axios 统一错误拦截；新增 DataState 组件；新增 KB 内容预览 |
 | 1.5.0 | 2026-06-29 | 修复 Express Router 路由匹配问题，使用 app.use 直接挂载路由 |
 | 1.4.  | 2026-06-29 | 添加 pkg 静态打包支持，解决 GLIBC 兼容性问题 |
@@ -416,3 +417,55 @@ build: 构建相关（如 pkg 打包）
 - [x] LICENSE (2026-06-30, MIT)
 - [x] .editorconfig (2026-06-30)
 - [x] 密钥硬编码清理 (2026-06-30, 需用户在平台轮换)
+- [x] v1.7.1 系统性修复 11 项 (字段对齐/翻译降级/zip 规范化/凭证自检)
+- [x] 老问题清单章节（避免重复出现）
+
+## 老问题清单（v1.7.1 起维护，避免重复出现）
+
+### 问题 1：KB API 字段命名不一致（v1.5.0 ~ v1.7.0）
+- **症状**：KB 浏览器搜索返回 400 / Skill 创建时 KB ID 解析失败
+- **根因**：客户端用 `kb_id` / `doc_id` / `parent_id`（snake_case），服务端用 `kbId` / `docId` / `parentId`（camelCase）。4 个 POST 路由（/tree, /info, /content, /contents/create, /contents/update）受影响
+- **v1.7.1 解决**：
+  1. 抽离 `src/shared/types/kb.ts` 共享类型
+  2. 客户端 `src/client/services/kb.ts` 改用 camelCase
+  3. 服务端 `src/server/routes/kb.ts` 通过 `getField(body, 'kbId', 'kb_id')` 兼容双字段名
+- **预防**：
+  - 未来新增 KB API **必须**用 `src/shared/types/kb.ts` 的接口
+  - 任何新接口都需通过 `tests/unit/kbRouteFieldCompat.test.ts` 回归
+
+### 问题 2：九问翻译静默降级（v1.6.0 ~ v1.7.0）
+- **症状**：前端转圈后 Skill 用 ASCII 名字生成，无错误提示；用户从九问 Bot 平台看日志才发现翻译没调通
+- **根因**：
+  1. 翻译失败被 `routes/skill.ts:131-137` 的 try/catch 吞掉，只 `console.error`
+  2. 部署脚本未注入 `.env`（`PORT=5053 nohup ... &` 没有 export 凭证）
+- **v1.7.1 解决**：
+  1. 翻译失败返回 `warning` 字段（前端能感知降级）
+  2. `src/server/index.ts` 启动时打印 `[Boot] LLM_API_KEY: configured/MISSING` 自检日志
+  3. 新增 `/api/diag/translate-health` 探针
+  4. `deploy-server.sh` 启动前 `source .env`
+- **预防**：
+  - 服务器部署必须 `source .env`（无 .env 则翻译降级为 ASCII）
+  - 任何新翻译/AI 接口必须返回降级状态（`warning` 字段）
+  - 启动后跑 `scripts/post-deploy.sh` smoke test 验证
+
+### 问题 3：Skill zip 包结构不规范（v1.6.0 ~ v1.7.0）
+- **症状**：zip 能下载但 Skill 加载器无法解析（YAML frontmatter 报错 / 目录名乱码）
+- **根因**：
+  1. `SKILL.md` YAML frontmatter 格式错（`trigger` 是字符串不是列表、字符串无引号）
+  2. zip 内部目录名 `name.toLowerCase().replace(/\s+/g, '-')` 与文件名派生规则不一致
+  3. 空 `__init__.py` 被归档
+  4. `generateSkillContent` 不嵌入用户 description
+- **v1.7.1 解决**：
+  1. `skillPackage.ts:14-24` YAML 规范化（双引号 + `trigger` 列表 + yamlEscape 转义）
+  2. 抽出 `safeName()` 工具，与 `routes/skill.ts:242-247` 派生规则统一
+  3. 跳过空 `__init__.py`
+- **预防**：
+  - CI 跑 `tests/unit/skillPackageV171.test.ts` 验证 zip 结构
+  - 任何 zip 结构调整必须扩展 `skillPackageV171.test.ts`
+
+### 问题 4：知识库浏览"资源不存在"（v1.5.0 之前）
+- **症状**：KB 浏览器输入 KB ID 报"资源不存在"
+- **根因**：v1.5.0 之前 `GET /:kbId` 直调上游 KM API 失败无代理
+- **v1.6.0 解决**（`67efdb6`）：新增后端代理路由 `/api/kb/{tree,info,content,...}`
+- **v1.7.1 强化**：字段兼容双字段名 + 共享类型
+- **预防**：KB API 任何修改必须经过 `kbRouteFieldCompat.test.ts`

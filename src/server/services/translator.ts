@@ -113,4 +113,48 @@ export function asciiFallback(name: string): string {
   return ascii || `skill-${Date.now()}`
 }
 
-export { LLM_BOT_ID }
+// v1.7.1 翻译健康检查：调用 LLM Bot "hi" 验证可达性
+export interface TranslateHealthResult {
+  reachable: boolean
+  latencyMs: number
+  error?: string
+}
+
+export async function translatorHealthCheck(): Promise<TranslateHealthResult> {
+  const start = Date.now()
+  if (!LLM_API_KEY) {
+    return { reachable: false, latencyMs: 0, error: 'LLM_API_KEY not configured' }
+  }
+  try {
+    const testBody = {
+      query: 'hi',
+      inputs: {},
+      response_mode: 'blocking',
+      user: 'km-portal-health-check',
+    }
+    await execFileAsync(
+      'curl',
+      [
+        '-s',
+        '-o', '/dev/null',
+        '-w', '%{http_code}',
+        '-X', 'POST',
+        LLM_API_URL,
+        '-H', 'Content-Type: application/json',
+        '-H', `Authorization: Bearer ${LLM_API_KEY}`,
+        '-d', JSON.stringify(testBody),
+        '--max-time', '10',
+      ],
+      { timeout: 12000 }
+    )
+    return { reachable: true, latencyMs: Date.now() - start }
+  } catch (err) {
+    return {
+      reachable: false,
+      latencyMs: Date.now() - start,
+      error: (err as Error).message,
+    }
+  }
+}
+
+export { LLM_BOT_ID, LLM_API_URL, LLM_API_KEY }

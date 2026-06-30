@@ -67221,8 +67221,16 @@ var KMApiClient = class {
 
 // src/server/routes/kb.ts
 var router2 = (0, import_express2.Router)();
+function getField(body, ...keys) {
+  for (const key of keys) {
+    if (body[key] !== void 0 && body[key] !== null) return body[key];
+  }
+  return void 0;
+}
 async function verifyToken(req, res, requiredPermission = "read") {
-  const kbId = req.params.kbId || req.body.kb_id;
+  const paramKbId = req.params.kbId;
+  const bodyKbId = getField(req.body, "kbId", "kb_id");
+  const kbId = paramKbId || (bodyKbId !== void 0 ? String(bodyKbId) : void 0);
   if (!kbId || isNaN(Number(kbId)) || Number(kbId) <= 0) {
     res.status(400).json({ success: false, error: "Invalid KB ID" });
     return null;
@@ -67313,18 +67321,18 @@ router2.get("/:kbId/documents", async (req, res) => {
 });
 router2.post("/tree", async (req, res, next) => {
   try {
-    const { kbId } = req.body;
+    const kbId = getField(req.body, "kbId", "kb_id");
     if (!kbId) {
       res.status(400).json({ success: false, error: "kbId is required" });
       return;
     }
-    const token = await tokenStore.findByKbId(kbId);
+    const token = await tokenStore.findByKbId(String(kbId));
     if (!token || token.status !== "active") {
       res.status(401).json({ success: false, error: "No active token found for this KB" });
       return;
     }
     const kmApiClient2 = req.app.locals.kmApiClient;
-    const result = await kmApiClient2.getKBTree(kbId, token.token);
+    const result = await kmApiClient2.getKBTree(String(kbId), token.token);
     res.json({ success: true, data: result });
   } catch (error) {
     if (error instanceof KMApiError) {
@@ -67336,18 +67344,18 @@ router2.post("/tree", async (req, res, next) => {
 });
 router2.post("/info", async (req, res, next) => {
   try {
-    const { kbId } = req.body;
+    const kbId = getField(req.body, "kbId", "kb_id");
     if (!kbId) {
       res.status(400).json({ success: false, error: "kbId is required" });
       return;
     }
-    const token = await tokenStore.findByKbId(kbId);
+    const token = await tokenStore.findByKbId(String(kbId));
     if (!token || token.status !== "active") {
       res.status(401).json({ success: false, error: "No active token found for this KB" });
       return;
     }
     const kmApiClient2 = req.app.locals.kmApiClient;
-    const result = await kmApiClient2.getKBInfo(kbId, token.token);
+    const result = await kmApiClient2.getKBInfo(String(kbId), token.token);
     res.json({ success: true, data: result });
   } catch (error) {
     if (error instanceof KMApiError) {
@@ -67359,18 +67367,19 @@ router2.post("/info", async (req, res, next) => {
 });
 router2.post("/content", async (req, res, next) => {
   try {
-    const { kbId, docId } = req.body;
+    const kbId = getField(req.body, "kbId", "kb_id");
+    const docId = getField(req.body, "docId", "doc_id", "contentId", "content_id", "contentIds", "content_ids");
     if (!kbId || !docId) {
       res.status(400).json({ success: false, error: "kbId and docId are required" });
       return;
     }
-    const token = await tokenStore.findByKbId(kbId);
+    const token = await tokenStore.findByKbId(String(kbId));
     if (!token || token.status !== "active") {
       res.status(401).json({ success: false, error: "No active token found for this KB" });
       return;
     }
     const kmApiClient2 = req.app.locals.kmApiClient;
-    const result = await kmApiClient2.getKBDocument(kbId, docId, token.token);
+    const result = await kmApiClient2.getKBDocument(String(kbId), String(docId), token.token);
     res.json({ success: true, data: result });
   } catch (error) {
     if (error instanceof KMApiError) {
@@ -67382,12 +67391,12 @@ router2.post("/content", async (req, res, next) => {
 });
 router2.post("/contents/create", async (req, res, next) => {
   try {
-    const { kbId, ...data } = req.body;
+    const kbId = getField(req.body, "kbId", "kb_id");
     if (!kbId) {
       res.status(400).json({ success: false, error: "kbId is required" });
       return;
     }
-    const token = await tokenStore.findByKbId(kbId);
+    const token = await tokenStore.findByKbId(String(kbId));
     if (!token || token.status !== "active") {
       res.status(401).json({ success: false, error: "No active token found for this KB" });
       return;
@@ -67396,8 +67405,9 @@ router2.post("/contents/create", async (req, res, next) => {
       res.status(403).json({ success: false, error: "Insufficient permissions: need write access" });
       return;
     }
+    const { kbId: _omit1, kb_id: _omit2, ...data } = req.body;
     const kmApiClient2 = req.app.locals.kmApiClient;
-    const result = await kmApiClient2.createDocument(kbId, data, token.token);
+    const result = await kmApiClient2.createDocument(String(kbId), data, token.token);
     res.json({ success: true, data: result });
   } catch (error) {
     if (error instanceof KMApiError) {
@@ -67409,12 +67419,13 @@ router2.post("/contents/create", async (req, res, next) => {
 });
 router2.post("/contents/update", async (req, res, next) => {
   try {
-    const { kbId, docId, ...data } = req.body;
+    const kbId = getField(req.body, "kbId", "kb_id");
+    const docId = getField(req.body, "docId", "doc_id", "contentId", "content_id");
     if (!kbId || !docId) {
       res.status(400).json({ success: false, error: "kbId and docId are required" });
       return;
     }
-    const token = await tokenStore.findByKbId(kbId);
+    const token = await tokenStore.findByKbId(String(kbId));
     if (!token || token.status !== "active") {
       res.status(401).json({ success: false, error: "No active token found for this KB" });
       return;
@@ -67423,8 +67434,9 @@ router2.post("/contents/update", async (req, res, next) => {
       res.status(403).json({ success: false, error: "Insufficient permissions: need write access" });
       return;
     }
+    const { kbId: _omit1, kb_id: _omit2, docId: _omit3, doc_id: _omit4, ...data } = req.body;
     const kmApiClient2 = req.app.locals.kmApiClient;
-    const result = await kmApiClient2.updateDocument(kbId, docId, data, token.token);
+    const result = await kmApiClient2.updateDocument(String(kbId), String(docId), data, token.token);
     res.json({ success: true, data: result });
   } catch (error) {
     if (error instanceof KMApiError) {
@@ -67536,12 +67548,22 @@ var import_path3 = __toESM(require("path"), 1);
 // src/server/services/skillPackage.ts
 var import_archiver = __toESM(require_archiver(), 1);
 var import_stream = require("stream");
+function safeName(name) {
+  return name.replace(/[^\w\u4e00-\u9fa5\-_.]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "skill";
+}
+function yamlEscape(s) {
+  return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ");
+}
 function buildSkillMd(options) {
+  const triggerList = options.triggerWords.length > 0 ? options.triggerWords.map((w) => `  - "${yamlEscape(w)}"`).join("\n") : "  []";
   const frontmatter = [
     "---",
-    `name: ${options.skillName}`,
-    `description: ${options.description}`,
-    `trigger: ${options.triggerWords.join(", ")}`,
+    `name: "${yamlEscape(options.skillName)}"`,
+    `description: "${yamlEscape(options.description)}"`,
+    "trigger:",
+    triggerList,
+    `kb_id: ${options.kbId}`,
+    `version: "1.0.0"`,
     "---",
     ""
   ].join("\n");
@@ -67851,12 +67873,15 @@ async function buildSkillZip(options) {
       reject(err);
     });
     archive.pipe(output);
-    const skillDir = options.skillName.toLowerCase().replace(/\s+/g, "-");
+    const skillDir = safeName(options.skillName);
     archive.append(buildSkillMd(options), { name: `${skillDir}/SKILL.md` });
     archive.append(buildReadme(options), { name: `${skillDir}/README.md` });
     archive.append(buildUserConfig(options), { name: `${skillDir}/config/user.json` });
     archive.append(buildKbClientPy(), { name: `${skillDir}/scripts/kb_client.py` });
-    archive.append(buildInitPy(), { name: `${skillDir}/scripts/__init__.py` });
+    const initContent = buildInitPy();
+    if (initContent) {
+      archive.append(initContent, { name: `${skillDir}/scripts/__init__.py` });
+    }
     archive.append(buildRequirementsTxt(), { name: `${skillDir}/requirements.txt` });
     archive.finalize();
   });
@@ -67945,6 +67970,49 @@ function sanitizeEnglish(s) {
 function asciiFallback(name) {
   const ascii = name.replace(/[^\x20-\x7E]/g, "").replace(/\s+/g, "-").toLowerCase().replace(/-+/g, "-").replace(/^-|-$/g, "").slice(0, 50);
   return ascii || `skill-${Date.now()}`;
+}
+async function translatorHealthCheck() {
+  const start = Date.now();
+  if (!LLM_API_KEY) {
+    return { reachable: false, latencyMs: 0, error: "LLM_API_KEY not configured" };
+  }
+  try {
+    const testBody = {
+      query: "hi",
+      inputs: {},
+      response_mode: "blocking",
+      user: "km-portal-health-check"
+    };
+    await execFileAsync(
+      "curl",
+      [
+        "-s",
+        "-o",
+        "/dev/null",
+        "-w",
+        "%{http_code}",
+        "-X",
+        "POST",
+        LLM_API_URL,
+        "-H",
+        "Content-Type: application/json",
+        "-H",
+        `Authorization: Bearer ${LLM_API_KEY}`,
+        "-d",
+        JSON.stringify(testBody),
+        "--max-time",
+        "10"
+      ],
+      { timeout: 12e3 }
+    );
+    return { reachable: true, latencyMs: Date.now() - start };
+  } catch (err) {
+    return {
+      reachable: false,
+      latencyMs: Date.now() - start,
+      error: err.message
+    };
+  }
 }
 
 // src/server/routes/skill.ts
@@ -68041,11 +68109,13 @@ router4.post("/", async (req, res) => {
     }
     const validPermission = permission === "write" ? "write" : "read";
     let nameEn;
+    let translationWarning;
     try {
       nameEn = await translateToEnglish(name, String(kbId));
     } catch (err) {
       console.error("[Translate Error]:", err);
       nameEn = asciiFallback(name);
+      translationWarning = "LLM \u7FFB\u8BD1\u670D\u52A1\u4E0D\u53EF\u7528\uFF0C\u5DF2\u4F7F\u7528 ASCII \u964D\u7EA7\u540D\u3002\u751F\u6210\u7684 Skill \u540D\u79F0\u53EF\u80FD\u4E0D\u51C6\u786E\u3002";
     }
     const skill = {
       id: v4_default(),
@@ -68064,7 +68134,11 @@ router4.post("/", async (req, res) => {
       store.skills.push(skill);
       await writeStore2(store);
     });
-    res.json({ success: true, data: skill });
+    const responseBody = { success: true, data: skill };
+    if (translationWarning) {
+      responseBody.warning = translationWarning;
+    }
+    res.json(responseBody);
   } catch (error) {
     res.status(500).json({ success: false, error: "Failed to create skill" });
   }
@@ -68134,8 +68208,8 @@ router4.get("/:id/export", async (req, res) => {
       kbName: skill.kbName,
       content: skill.content
     });
-    const safeName = skill.name.replace(/[^\w\u4e00-\u9fa5\-_.]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "skill";
-    const filename = `kb-${safeName}-v1.0.0.zip`;
+    const safeName2 = skill.name.replace(/[^\w\u4e00-\u9fa5\-_.]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "skill";
+    const filename = `kb-${safeName2}-v1.0.0.zip`;
     const filenameFallback = filename.replace(/[^\x20-\x7E]/g, "_");
     res.setHeader("Content-Type", "application/zip");
     res.setHeader(
@@ -68218,6 +68292,20 @@ router5.post("/verify", async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, error: "Verification failed" });
   }
+});
+router5.get("/translate-health", async (_req, res) => {
+  const result = await translatorHealthCheck();
+  res.json({
+    success: true,
+    data: {
+      llm_configured: !!LLM_API_KEY,
+      llm_url: LLM_API_URL,
+      bot_id: LLM_BOT_ID || "not set",
+      reachable: result.reachable,
+      latency_ms: result.latencyMs,
+      error: result.error
+    }
+  });
 });
 var diag_default = router5;
 
@@ -68350,6 +68438,18 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   console.log(`KM-Portal server running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/api/health`);
+  const llmKeyStatus = process.env.LLM_API_KEY ? "configured" : "MISSING";
+  const kmKeyStatus = process.env.KM_API_KEY ? "configured" : "MISSING";
+  console.log(`[Boot] LLM_API_KEY: ${llmKeyStatus}`);
+  console.log(`[Boot] KM_API_KEY:  ${kmKeyStatus}`);
+  console.log(`[Boot] LLM_BOT_ID:  ${process.env.LLM_BOT_ID || "not set"}`);
+  console.log(`[Boot] WIKI_BASE_URL: ${process.env.WIKI_BASE_URL || "default (https://wiki.vivo.xyz)"}`);
+  if (llmKeyStatus === "MISSING") {
+    console.warn("[Boot] WARNING: \u4E5D\u95EE\u7FFB\u8BD1\u529F\u80FD\u4E0D\u53EF\u7528\uFF08LLM_API_KEY \u672A\u914D\u7F6E\uFF09\uFF0CSkill \u4E2D\u6587\u540D\u7FFB\u8BD1\u5C06\u964D\u7EA7\u4E3A ASCII");
+  }
+  if (kmKeyStatus === "MISSING") {
+    console.warn("[Boot] WARNING: KM API \u8C03\u7528\u53EF\u80FD\u5931\u8D25\uFF08KM_API_KEY \u672A\u914D\u7F6E\uFF09");
+  }
 });
 /*! Bundled license information:
 

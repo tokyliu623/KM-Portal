@@ -41,20 +41,37 @@ else
     echo ">>> 无旧进程，直接启动"
 fi
 
+# v1.7.1 加载 .env 注入凭证
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    echo ">>> 加载 .env 注入凭证..."
+    set -a
+    # shellcheck disable=SC1091
+    source "$SCRIPT_DIR/.env"
+    set +a
+else
+    echo ">>> ⚠️  .env 文件不存在，使用环境变量或默认值（翻译功能将不可用）"
+fi
+
 echo ">>> 启动后端服务..."
-PORT=5053 nohup "$SCRIPT_DIR/dist/km-portal-linux" > server.log 2>&1 &
+PORT="${PORT:-5053}" nohup "$SCRIPT_DIR/dist/km-portal-linux" > server.log 2>&1 &
 sleep 3
 
 if pgrep -f "km-portal-linux" > /dev/null; then
     echo "=== 部署成功，服务运行中 ==="
     echo "PID: $(pgrep -f 'km-portal-linux')"
     echo "健康检查: http://localhost:5053/api/health"
+    echo "翻译健康检查: http://localhost:5053/api/diag/translate-health"
     echo "日志: $SCRIPT_DIR/server.log"
 
     if curl -s http://localhost:5053/api/health | grep -q "ok"; then
         echo "✅ 服务健康检查通过"
     else
         echo "⚠️ 服务可能未正常启动，请检查日志"
+    fi
+
+    if [ -f "$SCRIPT_DIR/scripts/post-deploy.sh" ]; then
+        echo ">>> 运行部署后 smoke 测试..."
+        bash "$SCRIPT_DIR/scripts/post-deploy.sh" || echo "⚠️ Smoke 测试失败，请手动检查"
     fi
 else
     echo "=== 部署失败，请检查日志 ==="

@@ -44,36 +44,39 @@ export interface ApiResponse<T> {
   data?: T
   error?: string
   message?: string
+  warning?: string
 }
 
+// v1.7.1 字段对齐：所有 body 字段统一为 camelCase
+// 服务端 routes/kb.ts 兼容双字段名（kbId/kb_id, parentId/parent_id 等）
 export const kbApi = {
-  getInfo: (kbId: string) => api.post<ApiResponse<KbInfo[]>>('/kb/info', { kb_id: kbId }),
+  getInfo: (kbId: string) => api.post<ApiResponse<KbInfo[]>>('/kb/info', { kbId }),
 
   getTree: (kbId: string, parentId?: number) =>
-    api.post<ApiResponse<TreeNode[]>>('/kb/tree', { kb_id: kbId, parent_id: parentId }),
+    api.post<ApiResponse<TreeNode[]>>('/kb/tree', { kbId, parentId }),
 
   getContent: (kbId: string, contentIds: number[], contentType: string) =>
     api.post<ApiResponse<{ type: string; content: ContentBody[] }>>('/kb/content', {
-      kb_id: kbId,
-      content_ids: contentIds,
-      content_type: contentType,
+      kbId,
+      contentIds,
+      contentType,
     }),
 
   createContent: (kbId: string, title: string, contentType: string, content: string, parentId?: number) =>
     api.post<ApiResponse<ContentBody>>('/kb/contents/create', {
-      kb_id: kbId,
+      kbId,
       title,
-      content_type: contentType,
+      contentType,
       content,
-      parent_id: parentId,
+      parentId,
     }),
 
   updateContent: (kbId: string, contentId: number, title: string, contentType: string, content: string) =>
     api.post<ApiResponse<ContentBody>>('/kb/contents/update', {
-      kb_id: kbId,
-      content_id: contentId,
+      kbId,
+      contentId,
       title,
-      content_type: contentType,
+      contentType,
       content,
     }),
 

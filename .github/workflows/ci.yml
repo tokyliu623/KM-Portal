@@ -34,6 +34,9 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
+      - name: v1.7.1 zip structure validation
+        run: npx vitest run tests/unit/skillPackageV171.test.ts
+
   build:
     name: Build (client + server)
     runs-on: ubuntu-latest

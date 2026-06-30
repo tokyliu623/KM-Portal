@@ -6,8 +6,18 @@ import { KMApiError } from '../services/kmApiClient.js'
 
 const router = Router()
 
+// v1.7.1 兼容双字段名（kbId/kb_id, parentId/parent_id, docId/doc_id, contentId/content_id, contentType/content_type）
+function getField(body: Record<string, unknown>, ...keys: string[]): unknown {
+  for (const key of keys) {
+    if (body[key] !== undefined && body[key] !== null) return body[key]
+  }
+  return undefined
+}
+
 async function verifyToken(req: Request, res: Response, requiredPermission: 'read' | 'write' = 'read') {
-  const kbId = req.params.kbId || req.body.kb_id
+  const paramKbId = req.params.kbId
+  const bodyKbId = getField(req.body, 'kbId', 'kb_id')
+  const kbId = paramKbId || (bodyKbId !== undefined ? String(bodyKbId) : undefined)
   if (!kbId || isNaN(Number(kbId)) || Number(kbId) <= 0) {
     res.status(400).json({ success: false, error: 'Invalid KB ID' })
     return null
@@ -117,18 +127,18 @@ router.get('/:kbId/documents', async (req, res) => {
 
 router.post('/tree', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { kbId } = req.body
+    const kbId = getField(req.body, 'kbId', 'kb_id')
     if (!kbId) {
       res.status(400).json({ success: false, error: 'kbId is required' })
       return
     }
-    const token = await tokenStore.findByKbId(kbId)
+    const token = await tokenStore.findByKbId(String(kbId))
     if (!token || token.status !== 'active') {
       res.status(401).json({ success: false, error: 'No active token found for this KB' })
       return
     }
     const kmApiClient: KMApiClient = req.app.locals.kmApiClient
-    const result = await kmApiClient.getKBTree(kbId, token.token)
+    const result = await kmApiClient.getKBTree(String(kbId), token.token)
     res.json({ success: true, data: result })
   } catch (error) {
     if (error instanceof KMApiError) {
@@ -141,18 +151,18 @@ router.post('/tree', async (req: Request, res: Response, next: NextFunction) => 
 
 router.post('/info', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { kbId } = req.body
+    const kbId = getField(req.body, 'kbId', 'kb_id')
     if (!kbId) {
       res.status(400).json({ success: false, error: 'kbId is required' })
       return
     }
-    const token = await tokenStore.findByKbId(kbId)
+    const token = await tokenStore.findByKbId(String(kbId))
     if (!token || token.status !== 'active') {
       res.status(401).json({ success: false, error: 'No active token found for this KB' })
       return
     }
     const kmApiClient: KMApiClient = req.app.locals.kmApiClient
-    const result = await kmApiClient.getKBInfo(kbId, token.token)
+    const result = await kmApiClient.getKBInfo(String(kbId), token.token)
     res.json({ success: true, data: result })
   } catch (error) {
     if (error instanceof KMApiError) {
@@ -165,18 +175,19 @@ router.post('/info', async (req: Request, res: Response, next: NextFunction) => 
 
 router.post('/content', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { kbId, docId } = req.body
+    const kbId = getField(req.body, 'kbId', 'kb_id')
+    const docId = getField(req.body, 'docId', 'doc_id', 'contentId', 'content_id', 'contentIds', 'content_ids')
     if (!kbId || !docId) {
       res.status(400).json({ success: false, error: 'kbId and docId are required' })
       return
     }
-    const token = await tokenStore.findByKbId(kbId)
+    const token = await tokenStore.findByKbId(String(kbId))
     if (!token || token.status !== 'active') {
       res.status(401).json({ success: false, error: 'No active token found for this KB' })
       return
     }
     const kmApiClient: KMApiClient = req.app.locals.kmApiClient
-    const result = await kmApiClient.getKBDocument(kbId, docId, token.token)
+    const result = await kmApiClient.getKBDocument(String(kbId), String(docId), token.token)
     res.json({ success: true, data: result })
   } catch (error) {
     if (error instanceof KMApiError) {
@@ -189,12 +200,12 @@ router.post('/content', async (req: Request, res: Response, next: NextFunction) 
 
 router.post('/contents/create', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { kbId, ...data } = req.body
+    const kbId = getField(req.body, 'kbId', 'kb_id')
     if (!kbId) {
       res.status(400).json({ success: false, error: 'kbId is required' })
       return
     }
-    const token = await tokenStore.findByKbId(kbId)
+    const token = await tokenStore.findByKbId(String(kbId))
     if (!token || token.status !== 'active') {
       res.status(401).json({ success: false, error: 'No active token found for this KB' })
       return
@@ -203,8 +214,10 @@ router.post('/contents/create', async (req: Request, res: Response, next: NextFu
       res.status(403).json({ success: false, error: 'Insufficient permissions: need write access' })
       return
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { kbId: _omit1, kb_id: _omit2, ...data } = req.body
     const kmApiClient: KMApiClient = req.app.locals.kmApiClient
-    const result = await kmApiClient.createDocument(kbId, data, token.token)
+    const result = await kmApiClient.createDocument(String(kbId), data, token.token)
     res.json({ success: true, data: result })
   } catch (error) {
     if (error instanceof KMApiError) {
@@ -217,12 +230,13 @@ router.post('/contents/create', async (req: Request, res: Response, next: NextFu
 
 router.post('/contents/update', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { kbId, docId, ...data } = req.body
+    const kbId = getField(req.body, 'kbId', 'kb_id')
+    const docId = getField(req.body, 'docId', 'doc_id', 'contentId', 'content_id')
     if (!kbId || !docId) {
       res.status(400).json({ success: false, error: 'kbId and docId are required' })
       return
     }
-    const token = await tokenStore.findByKbId(kbId)
+    const token = await tokenStore.findByKbId(String(kbId))
     if (!token || token.status !== 'active') {
       res.status(401).json({ success: false, error: 'No active token found for this KB' })
       return
@@ -231,8 +245,10 @@ router.post('/contents/update', async (req: Request, res: Response, next: NextFu
       res.status(403).json({ success: false, error: 'Insufficient permissions: need write access' })
       return
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { kbId: _omit1, kb_id: _omit2, docId: _omit3, doc_id: _omit4, ...data } = req.body
     const kmApiClient: KMApiClient = req.app.locals.kmApiClient
-    const result = await kmApiClient.updateDocument(kbId, docId, data, token.token)
+    const result = await kmApiClient.updateDocument(String(kbId), String(docId), data, token.token)
     res.json({ success: true, data: result })
   } catch (error) {
     if (error instanceof KMApiError) {

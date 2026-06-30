@@ -129,11 +129,13 @@ router.post('/', async (req, res) => {
     const validPermission = permission === 'write' ? 'write' : 'read'
 
     let nameEn: string
+    let translationWarning: string | undefined
     try {
       nameEn = await translateToEnglish(name, String(kbId))
     } catch (err) {
       console.error('[Translate Error]:', err)
       nameEn = asciiFallback(name)
+      translationWarning = 'LLM 翻译服务不可用，已使用 ASCII 降级名。生成的 Skill 名称可能不准确。'
     }
 
     const skill: GeneratedSkill = {
@@ -155,7 +157,11 @@ router.post('/', async (req, res) => {
       await writeStore(store)
     })
 
-    res.json({ success: true, data: skill })
+    const responseBody: Record<string, unknown> = { success: true, data: skill }
+    if (translationWarning) {
+      responseBody.warning = translationWarning
+    }
+    res.json(responseBody)
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to create skill' })
   }

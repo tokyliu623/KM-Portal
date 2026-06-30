@@ -43,4 +43,17 @@ app.use(errorHandler);
 app.listen(PORT, () => {
     console.log(`KM-Portal server running on port ${PORT}`);
     console.log(`Health check: http://localhost:${PORT}/api/health`);
+    // v1.7.1 启动凭证自检
+    const llmKeyStatus = process.env.LLM_API_KEY ? 'configured' : 'MISSING';
+    const kmKeyStatus = process.env.KM_API_KEY ? 'configured' : 'MISSING';
+    console.log(`[Boot] LLM_API_KEY: ${llmKeyStatus}`);
+    console.log(`[Boot] KM_API_KEY:  ${kmKeyStatus}`);
+    console.log(`[Boot] LLM_BOT_ID:  ${process.env.LLM_BOT_ID || 'not set'}`);
+    console.log(`[Boot] WIKI_BASE_URL: ${process.env.WIKI_BASE_URL || 'default (https://wiki.vivo.xyz)'}`);
+    if (llmKeyStatus === 'MISSING') {
+        console.warn('[Boot] WARNING: 九问翻译功能不可用（LLM_API_KEY 未配置），Skill 中文名翻译将降级为 ASCII');
+    }
+    if (kmKeyStatus === 'MISSING') {
+        console.warn('[Boot] WARNING: KM API 调用可能失败（KM_API_KEY 未配置）');
+    }
 });

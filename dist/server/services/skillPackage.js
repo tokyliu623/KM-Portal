@@ -1,11 +1,30 @@
 import archiver from 'archiver';
 import { Writable } from 'stream';
+// v1.7.1 安全目录名：与 routes/skill.ts 的 safeName 保持一致
+function safeName(name) {
+    return name
+        .replace(/[^\w\u4e00-\u9fa5\-_.]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        .toLowerCase() || 'skill';
+}
+// v1.7.1 YAML 字符串转义（双引号包裹 + 反斜杠转义内部引号）
+function yamlEscape(s) {
+    return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, ' ');
+}
 function buildSkillMd(options) {
+    // v1.7.1 YAML frontmatter 规范化：description 用双引号、trigger 改列表
+    const triggerList = options.triggerWords.length > 0
+        ? options.triggerWords.map(w => `  - "${yamlEscape(w)}"`).join('\n')
+        : '  []';
     const frontmatter = [
         '---',
-        `name: ${options.skillName}`,
-        `description: ${options.description}`,
-        `trigger: ${options.triggerWords.join(', ')}`,
+        `name: "${yamlEscape(options.skillName)}"`,
+        `description: "${yamlEscape(options.description)}"`,
+        'trigger:',
+        triggerList,
+        `kb_id: ${options.kbId}`,
+        `version: "1.0.0"`,
         '---',
         '',
     ].join('\n');
@@ -293,6 +312,7 @@ def test_connection() -> Dict[str, Any]:
 `;
 }
 function buildInitPy() {
+    // v1.7.1 跳过空 __init__.py（Python 包识别不需要此文件）
     return '';
 }
 function buildRequirementsTxt() {
@@ -315,12 +335,17 @@ export async function buildSkillZip(options) {
             reject(err);
         });
         archive.pipe(output);
-        const skillDir = options.skillName.toLowerCase().replace(/\s+/g, '-');
+        // v1.7.1 使用统一 safeName 派生规则（与 routes/skill.ts 一致）
+        const skillDir = safeName(options.skillName);
         archive.append(buildSkillMd(options), { name: `${skillDir}/SKILL.md` });
         archive.append(buildReadme(options), { name: `${skillDir}/README.md` });
         archive.append(buildUserConfig(options), { name: `${skillDir}/config/user.json` });
         archive.append(buildKbClientPy(), { name: `${skillDir}/scripts/kb_client.py` });
-        archive.append(buildInitPy(), { name: `${skillDir}/scripts/__init__.py` });
+        // v1.7.1 跳过空 __init__.py
+        const initContent = buildInitPy();
+        if (initContent) {
+            archive.append(initContent, { name: `${skillDir}/scripts/__init__.py` });
+        }
         archive.append(buildRequirementsTxt(), { name: `${skillDir}/requirements.txt` });
         archive.finalize();
     });

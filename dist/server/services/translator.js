@@ -83,4 +83,37 @@ export function asciiFallback(name) {
         .slice(0, 50);
     return ascii || `skill-${Date.now()}`;
 }
-export { LLM_BOT_ID };
+export async function translatorHealthCheck() {
+    const start = Date.now();
+    if (!LLM_API_KEY) {
+        return { reachable: false, latencyMs: 0, error: 'LLM_API_KEY not configured' };
+    }
+    try {
+        const testBody = {
+            query: 'hi',
+            inputs: {},
+            response_mode: 'blocking',
+            user: 'km-portal-health-check',
+        };
+        await execFileAsync('curl', [
+            '-s',
+            '-o', '/dev/null',
+            '-w', '%{http_code}',
+            '-X', 'POST',
+            LLM_API_URL,
+            '-H', 'Content-Type: application/json',
+            '-H', `Authorization: Bearer ${LLM_API_KEY}`,
+            '-d', JSON.stringify(testBody),
+            '--max-time', '10',
+        ], { timeout: 12000 });
+        return { reachable: true, latencyMs: Date.now() - start };
+    }
+    catch (err) {
+        return {
+            reachable: false,
+            latencyMs: Date.now() - start,
+            error: err.message,
+        };
+    }
+}
+export { LLM_BOT_ID, LLM_API_URL, LLM_API_KEY };
