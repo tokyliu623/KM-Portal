@@ -1,3 +1,4 @@
+import { Card, Steps } from 'antd'
 import { PageHeader } from '../../components/PageHeader'
 import { InitStage } from './stages/InitStage'
 import { DiagnoseStage } from './stages/DiagnoseStage'

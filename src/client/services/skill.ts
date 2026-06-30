@@ -11,6 +11,10 @@ export interface GeneratedSkill {
   content: string
   createdAt: string
   updatedAt: string
+  /** v1.9.0: 关联 API Key ID */
+  apiKeyId?: string
+  /** v1.9.0: 创建时返回的明文 API Key */
+  apiKey?: string
 }
 
 export interface ApiResponse<T> {

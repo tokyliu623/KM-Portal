@@ -20,7 +20,8 @@ interface WizardState {
   loading: boolean
   error: string | null
   jobId: string | null
-  jobStatus: 'pending' | 'running' | 'completed' | 'failed' | 'done' | 'error' | null
+  // v1.8.6 对齐服务端 routes/wizard.ts WizardJob.status 枚举
+  jobStatus: 'pending' | 'running' | 'done' | 'error' | null
   setWizardId: (id: string | null) => void
   setStage: (stage: WizardStage) => void
   setCredential: (credential: KBCredential | null) => void

@@ -8,6 +8,7 @@ import { SkillGen } from './pages/SkillGen'
 import { ApiDocs } from './pages/ApiDocs'
 import { WizardPage } from './pages/Wizard'
 import KMStudioPage from './pages/Wizard/KMStudioPage'
+import { Stats } from './pages/Stats'
 
 export function AppRouter() {
   return (
@@ -22,6 +23,7 @@ export function AppRouter() {
         <Route path="api-docs" element={<ApiDocs />} />
         <Route path="wizard" element={<WizardPage />} />
         <Route path="km-studio" element={<KMStudioPage />} />
+        <Route path="stats" element={<Stats />} />
       </Route>
     </Routes>
   )

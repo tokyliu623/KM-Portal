@@ -27,6 +27,7 @@ export function DiagnoseStage() {
     setLoading(true)
     setError(null)
     try {
+      // v1.8.6: wizardApi 已 unwrap
       const res = await wizardApi.diagnose(credential.kbId, credential.token)
       if (res.success && res.data) {
         setDiagnoseResult(res.data)

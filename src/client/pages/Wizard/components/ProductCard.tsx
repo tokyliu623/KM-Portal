@@ -8,32 +8,33 @@ import {
   DownloadOutlined,
   CheckCircleOutlined,
 } from '@ant-design/icons'
-import type { ProductItem } from '../../services/wizard'
+import type { ProductItem } from '../../../services/wizard'
 
 const { Text } = Typography
 
 const iconMap: Record<string, React.ReactNode> = {
   skill: <GiftOutlined style={{ fontSize: 32, color: '#1890ff' }} />,
   mcp: <ApiOutlined style={{ fontSize: 32, color: '#52c41a' }} />,
-  template: <BulbOutlined style={{ fontSize: 32, color: '#faad14' }} />,
+  // v1.8.6: 对齐服务端 WizardProduct.type = 'ai_template' | 'tree'
+  ai_template: <BulbOutlined style={{ fontSize: 32, color: '#faad14' }} />,
   openapi: <FileTextOutlined style={{ fontSize: 32, color: '#f5222d' }} />,
-  structure: <FolderOutlined style={{ fontSize: 32, color: '#722ed1' }} />,
+  tree: <FolderOutlined style={{ fontSize: 32, color: '#722ed1' }} />,
 }
 
 const typeNameMap: Record<string, string> = {
   skill: 'Skill 安装包',
   mcp: 'MCP 配置',
-  template: 'AI 模板',
+  ai_template: 'AI 指令模板',
   openapi: 'OpenAPI 规范',
-  structure: '目录结构',
+  tree: '目录结构',
 }
 
 const typeColorMap: Record<string, string> = {
   skill: 'blue',
   mcp: 'green',
-  template: 'gold',
+  ai_template: 'gold',
   openapi: 'red',
-  structure: 'purple',
+  tree: 'purple',
 }
 
 interface ProductCardProps {

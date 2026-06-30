@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { tokenStore } from '../services/tokenStore.js';
 import { KMApiError } from '../services/kmApiClient.js';
+import { apiKeyAuth } from '../middleware/apiKeyAuth.js';
 import { getField } from '../utils/fieldCompat.js';
 const router = Router();
 async function verifyToken(req, res, requiredPermission = 'read') {
@@ -103,15 +104,15 @@ router.get('/:kbId/documents', async (req, res) => {
         message: 'Documents listed successfully',
     });
 });
-router.post('/tree', async (req, res, next) => {
+router.post('/tree', apiKeyAuth, async (req, res, next) => {
     try {
         const kbId = getField(req.body, 'kbId', 'kb_id');
         if (!kbId) {
             res.status(400).json({ success: false, error: 'kbId is required' });
             return;
         }
-        const token = await tokenStore.findByKbId(String(kbId));
-        if (!token || token.status !== 'active') {
+        const token = req.resolvedToken;
+        if (!token) {
             res.status(401).json({ success: false, error: 'No active token found for this KB' });
             return;
         }
@@ -128,15 +129,15 @@ router.post('/tree', async (req, res, next) => {
         }
     }
 });
-router.post('/info', async (req, res, next) => {
+router.post('/info', apiKeyAuth, async (req, res, next) => {
     try {
         const kbId = getField(req.body, 'kbId', 'kb_id');
         if (!kbId) {
             res.status(400).json({ success: false, error: 'kbId is required' });
             return;
         }
-        const token = await tokenStore.findByKbId(String(kbId));
-        if (!token || token.status !== 'active') {
+        const token = req.resolvedToken;
+        if (!token) {
             res.status(401).json({ success: false, error: 'No active token found for this KB' });
             return;
         }
@@ -153,7 +154,7 @@ router.post('/info', async (req, res, next) => {
         }
     }
 });
-router.post('/content', async (req, res, next) => {
+router.post('/content', apiKeyAuth, async (req, res, next) => {
     try {
         const kbId = getField(req.body, 'kbId', 'kb_id');
         const docId = getField(req.body, 'docId', 'doc_id', 'contentId', 'content_id', 'contentIds', 'content_ids');
@@ -161,8 +162,8 @@ router.post('/content', async (req, res, next) => {
             res.status(400).json({ success: false, error: 'kbId and docId are required' });
             return;
         }
-        const token = await tokenStore.findByKbId(String(kbId));
-        if (!token || token.status !== 'active') {
+        const token = req.resolvedToken;
+        if (!token) {
             res.status(401).json({ success: false, error: 'No active token found for this KB' });
             return;
         }
@@ -179,19 +180,15 @@ router.post('/content', async (req, res, next) => {
         }
     }
 });
-router.post('/contents/create', async (req, res, next) => {
+router.post('/contents/create', apiKeyAuth, async (req, res, next) => {
     try {
         const kbId = getField(req.body, 'kbId', 'kb_id');
         if (!kbId) {
             res.status(400).json({ success: false, error: 'kbId is required' });
             return;
         }
-        const token = await tokenStore.findByKbId(String(kbId));
-        if (!token || token.status !== 'active') {
-            res.status(401).json({ success: false, error: 'No active token found for this KB' });
-            return;
-        }
-        if (token.permission !== 'write') {
+        const token = req.resolvedToken;
+        if (!token || token.permission !== 'write') {
             res.status(403).json({ success: false, error: 'Insufficient permissions: need write access' });
             return;
         }
@@ -210,7 +207,7 @@ router.post('/contents/create', async (req, res, next) => {
         }
     }
 });
-router.post('/contents/update', async (req, res, next) => {
+router.post('/contents/update', apiKeyAuth, async (req, res, next) => {
     try {
         const kbId = getField(req.body, 'kbId', 'kb_id');
         const docId = getField(req.body, 'docId', 'doc_id', 'contentId', 'content_id');
@@ -218,12 +215,8 @@ router.post('/contents/update', async (req, res, next) => {
             res.status(400).json({ success: false, error: 'kbId and docId are required' });
             return;
         }
-        const token = await tokenStore.findByKbId(String(kbId));
-        if (!token || token.status !== 'active') {
-            res.status(401).json({ success: false, error: 'No active token found for this KB' });
-            return;
-        }
-        if (token.permission !== 'write') {
+        const token = req.resolvedToken;
+        if (!token || token.permission !== 'write') {
             res.status(403).json({ success: false, error: 'Insufficient permissions: need write access' });
             return;
         }

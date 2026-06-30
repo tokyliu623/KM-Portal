@@ -40,6 +40,8 @@ export function requestLogger(req, res, next) {
             latencyMs: latency,
             ip: getClientIp(req) || '',
             userAgent: req.headers['user-agent'] || '',
+            skillId: req.skillId,
+            skillName: req.skillName,
         });
     });
     next();

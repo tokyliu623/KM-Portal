@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Input, Button, message, Form, Select, Space, Table, Modal, Popconfirm } from 'antd'
+import { Input, Button, message, Form, Select, Space, Table, Modal, Popconfirm, Alert, Typography } from 'antd'
 import { PageHeader } from '../../components/PageHeader'
 import { DataState } from '../../components/DataState'
 import { skillApi, GeneratedSkill } from '../../services/skill'
+import { useNavigate } from 'react-router-dom'
+import { BarChartOutlined } from '@ant-design/icons'
 
 const { TextArea } = Input
 
@@ -13,6 +15,7 @@ export function SkillGen() {
   const [form] = Form.useForm()
   const [generating, setGenerating] = useState(false)
   const [generatedSkill, setGeneratedSkill] = useState<GeneratedSkill | null>(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     loadSkills()
@@ -91,6 +94,19 @@ export function SkillGen() {
     }
   }
 
+  const handleCopyKey = async (skill: GeneratedSkill) => {
+    if (!skill.apiKey) {
+      message.warning('该 Skill 未返回 API Key（旧数据），请重新创建')
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(skill.apiKey)
+      message.success('API Key 已复制')
+    } catch {
+      message.error('复制失败，请手动复制')
+    }
+  }
+
   const columns = [
     { title: '英文名', dataIndex: 'name', key: 'name' },
     { title: '原始名称', dataIndex: 'nameOriginal', key: 'nameOriginal', render: (v: string) => v || '-' },
@@ -107,6 +123,16 @@ export function SkillGen() {
       ),
     },
     {
+      title: 'API Key',
+      dataIndex: 'apiKey',
+      key: 'apiKey',
+      render: (v?: string) => v ? (
+        <Typography.Text code copyable={{ text: v }} style={{ fontSize: 11 }}>
+          {v.substring(0, 16)}...
+        </Typography.Text>
+      ) : <span style={{ color: '#999' }}>创建时已显示</span>,
+    },
+    {
       title: '创建时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
@@ -118,6 +144,7 @@ export function SkillGen() {
       render: (_: unknown, record: GeneratedSkill) => (
         <Space>
           <Button size="small" onClick={() => setGeneratedSkill(record)}>查看</Button>
+          <Button size="small" onClick={() => handleCopyKey(record)}>复制 Key</Button>
           <Button size="small" onClick={() => handleExport(record)}>导出</Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.id)}>
             <Button size="small" danger type="link">删除</Button>
@@ -129,10 +156,18 @@ export function SkillGen() {
 
   return (
     <div>
-      <PageHeader title="Skill 生成" subTitle="生成知识库运营助手" />
-      <div style={{ marginBottom: 16 }}>
-        <Button type="primary" onClick={() => setModalVisible(true)}>生成新 Skill</Button>
-      </div>
+      <PageHeader
+        title="Skill 生成"
+        subTitle="生成知识库运营助手（v1.9.0 自动生成 API Key）"
+        extra={
+          <Space>
+            <Button icon={<BarChartOutlined />} onClick={() => navigate('/stats')}>
+              查看调用统计
+            </Button>
+            <Button type="primary" onClick={() => setModalVisible(true)}>生成新 Skill</Button>
+          </Space>
+        }
+      />
       <DataState loading={loading} empty={skills.length === 0} emptyText="暂无 Skill">
         <Table columns={columns} dataSource={skills} rowKey="id" />
       </DataState>
@@ -146,7 +181,7 @@ export function SkillGen() {
       >
         <Form form={form} layout="vertical">
           <Form.Item name="name" label="Skill 名称" rules={[{ required: true }]}>
-            <Input placeholder="输入 Skill 名称" />
+            <Input placeholder="输入 Skill 名称（支持中文）" />
           </Form.Item>
           <Form.Item name="kbId" label="KB ID" rules={[{
             required: true,
@@ -184,12 +219,30 @@ export function SkillGen() {
         footer={[
           <Button key="copy" onClick={() => {
             navigator.clipboard.writeText(generatedSkill?.content || '')
-            message.success('已复制')
-          }}>复制</Button>,
-          <Button key="close" type="primary" onClick={() => setGeneratedSkill(null)}>关闭</Button>,
+            message.success('内容已复制')
+          }}>复制内容</Button>,
+          generatedSkill?.apiKey && (
+            <Button key="copy-key" type="primary" onClick={() => handleCopyKey(generatedSkill)}>
+              复制 API Key
+            </Button>
+          ),
+          <Button key="close" onClick={() => setGeneratedSkill(null)}>关闭</Button>,
         ]}
         width={800}
       >
+        {generatedSkill?.apiKey && (
+          <Alert
+            type="success"
+            showIcon
+            message="Skill API Key（v1.9.0 自动生成）"
+            description={
+              <Typography.Paragraph copyable={{ text: generatedSkill.apiKey }} style={{ marginBottom: 0, fontSize: 12 }}>
+                <code>{generatedSkill.apiKey}</code>
+              </Typography.Paragraph>
+            }
+            style={{ marginBottom: 16 }}
+          />
+        )}
         <pre style={{ background: '#f5f5f5', padding: 16, overflow: 'auto', maxHeight: 500 }}>
           {generatedSkill?.content}
         </pre>

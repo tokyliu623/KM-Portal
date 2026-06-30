@@ -1,6 +1,6 @@
 {
   "name": "km-portal",
-  "version": "1.7.1",
+  "version": "1.9.0",
   "description": "知识库运营一站式平台",
   "type": "module",
   "scripts": {
@@ -33,6 +33,7 @@
     "archiver": "^7.0.1",
     "axios": "^1.6.7",
     "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
     "express": "^4.18.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

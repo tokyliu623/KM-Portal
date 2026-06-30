@@ -34,7 +34,8 @@ export function AnalyzeStage() {
   const fetchStats = async () => {
     if (!credential) return
     try {
-      const res = await api.get<ApiResponse<KBStats>>(`/stats/kb/${credential.kbId}`)
+      // v1.8.6: api.get 仍返 AxiosResponse,需要 .then unwrap
+      const res = await api.get<ApiResponse<KBStats>>(`/stats/kb/${credential.kbId}`).then(r => r.data)
       if (res.success && res.data) {
         setStats(res.data)
       }

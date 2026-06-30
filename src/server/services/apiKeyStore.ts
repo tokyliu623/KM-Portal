@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import type { ApiKey } from '../types'
+import type { ApiKey } from '../types/index.js'
 
 const DEFAULT_DATA_DIR = path.join(process.cwd(), 'data')
 const DEFAULT_API_KEYS_FILE = path.join(DEFAULT_DATA_DIR, 'api-keys.json')
@@ -61,6 +61,41 @@ export const apiKeyStore = {
         name: name.trim(),
         key,
         createdAt: new Date().toISOString(),
+      }
+      store.keys.push(apiKey)
+      await writeStore(filePath, store)
+      return apiKey
+    })
+  },
+
+  /** v1.9.0: 为 Skill 自动生成并关联 API Key */
+  async createForSkill(data: {
+    name: string;
+    key: string;
+    skillId: string;
+    skillName: string;
+    kbId: number;
+  }): Promise<ApiKey> {
+    if (!data.name || data.name.trim().length === 0) {
+      throw new Error('Invalid name: name is required')
+    }
+    if (!data.key || data.key.length < 10) {
+      throw new Error('Invalid key: must be at least 10 characters')
+    }
+    if (!data.skillId || !data.skillName || !data.kbId) {
+      throw new Error('Invalid Skill association: skillId/skillName/kbId are required')
+    }
+    return withLock('apikey', async () => {
+      const filePath = resolveFilePath()
+      const store = await readStore(filePath)
+      const apiKey: ApiKey = {
+        id: uuidv4(),
+        name: data.name.trim(),
+        key: data.key,
+        createdAt: new Date().toISOString(),
+        skillId: data.skillId,
+        skillName: data.skillName,
+        kbId: data.kbId,
       }
       store.keys.push(apiKey)
       await writeStore(filePath, store)

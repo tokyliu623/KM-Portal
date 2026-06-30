@@ -2,6 +2,8 @@ node_modules/
 # dist/ 目录需要提交到 git，用于服务器直接运行预编译代码
 # dist/
 *.log
+server*.log
+!.vercel/activity-log.json
 .DS_Store
 .env
 .env.local

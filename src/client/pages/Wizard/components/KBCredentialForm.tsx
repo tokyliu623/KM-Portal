@@ -5,24 +5,21 @@ import { useWizardStore } from '../hooks/useWizard'
 const { Text } = Typography
 
 interface KBCredentialFormProps {
+  // v1.8.6: 统一为单一 onSubmit 回调,移除冗余的 onSuccess
   onSubmit?: (credential: KBCredential) => Promise<void> | void
-  onSuccess?: (credential: KBCredential) => void
   loading?: boolean
 }
 
-export function KBCredentialForm({ onSubmit, onSuccess, loading }: KBCredentialFormProps) {
+export function KBCredentialForm({ onSubmit, loading }: KBCredentialFormProps) {
   const [form] = Form.useForm()
+  const setCredential = useWizardStore.getState().setCredential
 
   const handleFinish = async (values: KBCredential) => {
     try {
       if (onSubmit) {
         await onSubmit(values)
       }
-      const setCredential = useWizardStore.getState().setCredential
       setCredential(values)
-      if (onSuccess) {
-        onSuccess(values)
-      }
     } catch {
       message.error('凭证验证失败')
     }

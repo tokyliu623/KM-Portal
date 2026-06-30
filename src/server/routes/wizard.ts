@@ -191,6 +191,12 @@ router.post('/diagnose', async (req: Request, res: Response, next: NextFunction)
 interface GenerateResponse {
   jobId: string
   status: 'pending'
+  // v1.8.6: 初始返回 5 个 pending 占位,前端可立即展示卡片
+  products: Array<{
+    type: 'skill' | 'mcp' | 'ai_template' | 'openapi' | 'tree'
+    name: string
+    status: 'pending'
+  }>
 }
 
 router.post('/generate', async (req: Request, res: Response, next: NextFunction) => {
@@ -384,7 +390,16 @@ router.post('/generate', async (req: Request, res: Response, next: NextFunction)
 
     generateJob()
 
-    const response: GenerateResponse = { jobId, status: 'pending' }
+    // v1.8.6: 初始返回 5 个 pending 占位
+    const initialProducts: GenerateResponse['products'] = [
+      { type: 'skill', name: 'Skill 安装包', status: 'pending' },
+      { type: 'mcp', name: 'MCP 配置', status: 'pending' },
+      { type: 'ai_template', name: 'AI 指令模板', status: 'pending' },
+      { type: 'openapi', name: 'OpenAPI 规范', status: 'pending' },
+      { type: 'tree', name: '目录结构', status: 'pending' },
+    ]
+
+    const response: GenerateResponse = { jobId, status: 'pending', products: initialProducts }
     res.json({ success: true, data: response })
   } catch (error) {
     next(error)
@@ -613,50 +628,6 @@ router.get('/swagger', (req: Request, res: Response, next: NextFunction) => {
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     res.send(html)
-  } catch (error) {
-    next(error)
-  }
-})
-
-router.post('/ai-prompts', (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const kbId = getField(req.body, 'kbId', 'kb_id')
-    const kbName = getField(req.body, 'kbName', 'kb_name')
-    const accessToken = getField(req.body, 'accessToken', 'token')
-    const description = getField(req.body, 'description', 'desc')
-
-    if (!kbId) {
-      res.status(400).json({ success: false, error: 'kbId is required' })
-      return
-    }
-    if (!kbName) {
-      res.status(400).json({ success: false, error: 'kbName is required' })
-      return
-    }
-
-    const kbIdNum = Number(kbId)
-    if (isNaN(kbIdNum) || kbIdNum <= 0) {
-      res.status(400).json({ success: false, error: 'Invalid kbId' })
-      return
-    }
-
-    const all = generateAllAiPrompts({
-      kbId: kbIdNum,
-      kbName: String(kbName),
-      description: description ? String(description) : undefined,
-      accessToken: accessToken ? String(accessToken) : '',
-    })
-
-    const files = all.map((t) => ({
-      type: t.type,
-      filename: t.filename,
-      content: t.content,
-    }))
-
-    res.json({
-      success: true,
-      data: { kbId: kbIdNum, kbName: String(kbName), files },
-    })
   } catch (error) {
     next(error)
   }

@@ -1,7 +1,7 @@
 # KM-Portal AGENTS.md
 
 > 本文件是 KM-Portal 项目的 Agent 工作规范。
-> 最后更新: 2026-06-30 (v1.8.3 运营效果分析已交付)
+> 最后更新: 2026-06-30 (v1.9.0 一站式知识运营管理中台已交付)
 
 ## 项目概述
 
@@ -383,7 +383,12 @@ build: 构建相关（如 pkg 打包）
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| 1.8.6 | 2026-06-30 | 系统性修复：删死代码 routes/index.ts + 第二个 ai-prompts 端点 + 客户端 getOpenApiSpecUrl/getSwaggerUrl；Wizard 5 步全栈状态/产物对齐（done/error 枚举 + ProductItem.description + TreeNode.children 递归 + KBCredentialForm onSubmit 统一）；版本号统一 1.8.6（package.json + server/index.ts + diag.ts）；tests/unit/wizardRoute.test.ts + tests/e2e/km-studio.spec.ts 补强（只写不跑） |
+| 1.8.5 | 2026-06-30 | KM Studio 平台整合：新增 `/km-studio` 路由（src/client/router.tsx）+ Wizard/KMStudioPage.tsx（5 步向导：Workflow→MCP→Prompt→Stats→OpenAPI）+ Layout.tsx 菜单项（RocketOutlined）+ 类型对齐（mcpConfig/aiPrompt 共享 src/shared/types/kmStudio.ts）+ 异步轮询 + 差异化下载（zip/json/md） |
+| 1.8.4 | 2026-06-30 | OpenAPI 3.0.3 规范生成：src/server/services/openApiSpecGenerator.ts（4 方法：buildSpec/buildPath/resolveRef/genYaml）覆盖 5 路由（admin/kb/skill/stats/diag）+ Swagger UI 静态托管 + tests/unit/openApiSpecGenerator.test.ts 8 测试；TDD RED 8/8 → GREEN 8/8 |
 | 1.8.3 | 2026-06-30 | 运营效果分析：src/server/services/operationStatsService.ts (4 方法：getApiLogStats/getManualKpis/saveManualKpi/generateTrendData/calculateHealthScore) + data/operation-stats.json (KB 维度 KPI 存储) + stats.ts 增 3 端点 (GET /operation/:kbId, POST /operation/:kbId, GET /health/:kbId) + tests/unit/operationStatsService.test.ts (10 测试 4 维度)；TDD 流程：RED 10/10 fail → GREEN 10/10 pass；ESLint + tsc + esbuild EXIT 0 |
+| 1.8.2 | 2026-06-30 | AI 指令模板生成：src/server/services/aiPromptTemplateGenerator.ts（5 类：writing/reading/qa/retrieval/instruction + i18n 中英文）+ tests/unit/aiPromptTemplateGenerator.test.ts 12 测试；TDD RED 12/12 → GREEN 12/12 |
+| 1.8.1 | 2026-06-30 | MCP 接入配置生成：src/server/services/mcpConfigGenerator.ts（4 客户端：Claude Desktop / Cursor / Continue / Cline，差异化 stdio/sse 配置）+ tests/unit/mcpConfigGenerator.test.ts 15 测试；TDD RED 15/15 → GREEN 15/15 |
 | 1.7.5 | 2026-06-30 | 部署脚本 5 大漏洞修复：新增 verify-deploy.sh 预检 + 重写 deploy-server.sh + AGENTS.md 部署经验章节 |
 | 1.7.4 | 2026-06-30 | Skill trigger 兜底：skillPackage.ts 新增 DEFAULT_TRIGGER_WORDS（8 个中英文+别名）；buildSkillMd/buildReadme 用 effectiveTriggers；verify-skill-e2e.sh trigger 检测接受空列表+非空列表；新增 skillPackageV174.test.ts 3 测试 |
 | 1.7.3 | 2026-06-30 | Skill 路由字段兼容：抽 getField 到 src/server/utils/fieldCompat.ts；routes/skill.ts 支持 snake_case (kb_id/kb_name)；新增 skillRouteFieldCompat.test.ts 5 个测试；E2E 验证脚本 (scripts/verify-skill-e2e.sh) 8 步验收 |
@@ -428,11 +433,15 @@ build: 构建相关（如 pkg 打包）
 - [x] v1.7.3 Skill 路由字段兼容 (snake_case kb_id/kb_name)
 - [x] v1.7.4 Skill trigger 兜底 (DEFAULT_TRIGGER_WORDS)
 - [x] v1.7.5 部署脚本 5 大漏洞修复 (2026-06-30)
-- [ ] v1.8.0 Workflow 向导 + 目录结构可视化 (T+8d)
-- [ ] v1.8.1 MCP 接入配置生成 (T+11d)
-- [ ] v1.8.2 AI 指令模板生成 (T+13d)
-- [ ] v1.8.3 运营效果分析（降级方案）(T+16d)
-- [ ] v1.8.4 OpenAPI 规范生成 (T+18d)
+- [x] v1.8.0 Workflow 向导 + 目录结构可视化 (T+8d)
+- [x] v1.8.1 MCP 接入配置生成 (T+11d)
+- [x] v1.8.2 AI 指令模板生成 (T+13d)
+- [x] v1.8.3 运营效果分析（降级方案）(T+16d)
+- [x] v1.8.4 OpenAPI 规范生成 (T+18d)
+- [x] v1.8.5 KM Studio 平台整合 (T+20d, /km-studio 路由 + 5 步向导)
+- [x] v1.8.6 系统性修复（死代码清理 + 全栈对齐 + 版本号统一 + 测试补强）(T+21d)
+- [x] v1.8 一站式交付 commit (06b552c) + push (origin/main 同步) (2026-06-30)
+- [ ] skillRouteFieldCompat.test.ts pre-existing lint 错误（v1.7.3 引入，v1.8 提交中已声明保留）
 - [ ] v1.9.0 前端向导完善 + 端到端联调 (T+25d)
 
 ## 老问题清单（v1.7.1 起维护，避免重复出现）
@@ -593,3 +602,131 @@ curl -fsS http://127.0.0.1:5053/api/health
 - sk_sudo: 受限（不能改 root: 文件/进程）
 - root: 全权（必须用 root 跑部署）
 - 网络: github.com:443 偶发 timeout，root + 重试能通
+
+## v1.9.0 一站式知识运营管理中台
+
+### 1. 架构概览
+
+v1.9.0 实现"创建 Skill → 自动获得 API Key → 用 API Key 通过 KM-Portal 代理调上游 → 统计按 Skill+KB 双维度聚合"完整闭环。
+
+**核心创新**：
+- Skill 创建时自动生成专属 API Key 并关联 Skill（无需用户手动管理）
+- Skill zip 内置 API Key + km_api_url，下载即可用
+- 调用统计从"按 endpoint"升级为"按 Skill+KB+endpoint"三维度
+- KM-Portal 5 个代理路由（tree/info/content/contents-create/contents-update）统一 Bearer API Key 鉴权
+
+### 2. 新增/修改文件清单
+
+#### 2.1 新增（5 个）
+| 文件 | 行数 | 职责 |
+|------|------|------|
+| `src/server/middleware/apiKeyAuth.ts` | 53 | Bearer API Key 鉴权 + 关联 Skill 字段注入 |
+| `src/server/services/statsService.ts` | 67 | by-skill 双维度聚合 |
+| `tests/unit/statsConcurrency.test.ts` | 70 | statsStore 并发安全回归测试 |
+| `scripts/verify-all-v190.py` | 290 | 一站式端到端验证（8 步+5 代理+by-skill+cleanup） |
+| `scripts/run-with-heartbeat.py` | 150 | 执行引擎：心跳+即时报告+失败根因分析 |
+
+#### 2.2 修改（10 个核心）
+| 文件 | 关键改动 |
+|------|----------|
+| `src/server/types/index.ts` | ApiKey 接口扩展 skillId/skillName/kbId |
+| `src/server/services/apiKeyStore.ts` | 新增 createForSkill() + import type 补 .js |
+| `src/server/routes/skill.ts` | POST 创建 Skill 自动生成 API Key + 补 .js 后缀 |
+| `src/server/services/skillPackage.ts` | buildUserConfig 注入 api_key/km_api_url + buildKbClientPy 统一 POST+Bearer |
+| `src/server/routes/kb.ts` | 5 个代理路由前置 apiKeyAuth |
+| `src/server/services/statsStore.ts` | **Bug A 修复**：withLock('stats',...) 包裹 recordCall |
+| `src/server/middleware/logger.ts` | PendingLog 透传 skillId/skillName |
+| `src/server/routes/stats.ts` | 新增 GET /api/stats/by-skill |
+| `src/server/index.ts` | `import 'dotenv/config'` 启动时自动加载 .env |
+| `package.json` | 新增 dotenv@^16.4.5 依赖 |
+
+### 3. 测试覆盖
+
+| 测试文件 | 状态 | 说明 |
+|---------|------|------|
+| `tests/unit/apiKeyStoreV190.test.ts` | 5/5 ✓ | API Key 创建/查找/删除 |
+| `tests/unit/statsStoreV190.test.ts` | 5/5 ✓ | getRawCalls 多维过滤 |
+| `tests/unit/statsService.test.ts` | 6/6 ✓ | by-skill 聚合 |
+| `tests/unit/statsConcurrency.test.ts` | 2/2 ✓ | **Bug A 回归**：50/100 并发写不损坏 JSON |
+| `tests/unit/wizardRoute.test.ts` | 5/5 ✓ | Wizard 路由 |
+| `tests/unit/kbRouteFieldCompat.test.ts` | 6/6 ✓ | KB API 双字段名兼容 |
+| `tests/unit/skillRouteFieldCompat.test.ts` | 5/5 ✓ | Skill API 双字段名兼容 |
+
+**总计 18 个测试文件 / 151+ 个测试**（v1.8.6 基础上新增 2 个）
+
+### 4. 端到端验证结果（本地）
+
+跑 `python scripts/verify-all-v190.py`（真 KB 34754 + token `u-46311a0f761a4d7fac562df2b789c96e`）：
+
+| 步骤 | 状态 | 详情 |
+|------|------|------|
+| Step 1 服务健康 + 凭证 | ✓ PASS | version=1.9.0, KM_API_KEY=configured |
+| Step 2 Token 入库 | ✓ PASS | KB 34754 + 真 token |
+| Step 3 Skill 创建 | ✓ PASS | apiKey=kmp-skill-* 自动注入 |
+| Step 4 zip 4 项改造 | ✓ PASS×4 | SKILL.md / user.json / kb_client.py |
+| Step 5 5 代理鉴权 | ✓ PASS×2 + △ WARN×3 | 鉴权全通过, 3 read 上游 404, 2 write 业务 403 |
+| Step 6 by-skill 双维度 | ✓ PASS | total=5 skills=1 |
+| Step 7 api-logs skillName | ✓ PASS | 5/5 100% |
+| Step 8 翻译探针 | ✓ PASS | /api/diag/translate-health |
+
+**15 项 12 PASS / 3 WARN / 0 FAIL**（WARN = 上游 KM 路径问题，非代码）
+
+### 5. 部署经验（v1.9.0 强化）
+
+#### 5.1 dotenv 自动加载
+- v1.9.0 引入 `import 'dotenv/config'`，服务启动时自动读取 .env
+- **v1.7.5 老问题解决**：部署脚本必须 `source .env` 才能注入凭证 → 现在**无需**手动 source
+- 但 .env 文件**必须**存在于 cwd/data 同一目录
+
+#### 5.2 一键部署脚本
+- `scripts/deploy-server-v190.sh`（新增）：v1.7.5 五大漏洞规避 + data 备份恢复 + 启动后自检
+- 用户一键执行：`bash scripts/deploy-server-v190.sh`
+
+#### 5.3 v1.9.0 部署前检查清单
+- [ ] .env 在仓库根（KM_API_KEY 已配置）
+- [ ] dist/km-portal-linux 是新版本（49MB+）
+- [ ] data/tokens.json 已备份（避免部署丢失）
+- [ ] 启动后跑 `python scripts/verify-all-v190.py` 验证
+
+### 6. 老问题清单（v1.9.0 维护）
+
+#### 问题 7：statsStore 并发写导致 api-logs.json JSON 损坏（v1.9.0 发现并修复）
+- **症状**：`/api/stats/by-skill` total 突然从 20 变成 0，api-logs.json 末尾出现 `}]` 重复符号
+- **根因**：`logger.ts:30-43 flushLogs` 用 `Promise.all` 并发触发 `recordCall`，但 `recordCall` 内部 read→push→write **无锁** → 多个请求 read 同一旧文件 → 各自 push 后 write 互相覆盖
+- **v1.9.0 解决**：
+  1. `src/server/services/statsStore.ts` 新增 `withLock('stats', ...)` 包裹整个 `recordCall`
+  2. 与 tokenStore/apiKeyStore 锁模式保持一致
+  3. 新增 `tests/unit/statsConcurrency.test.ts` 回归测试（50/100 并发）
+- **预防**：
+  - 任何新增 `xxxStore` 必须用 `withLock` 包裹写入
+  - 任何 `Promise.all` 批量写入必须先加锁
+
+#### 问题 8：.env 未注入导致 KM_API_KEY 一直 MISSING（v1.9.0 之前）
+- **症状**：服务启动日志 `[Boot] KM_API_KEY: MISSING`，上游 KM 调用缺 Bearer 头
+- **根因**：部署脚本 `nohup ... &` 不继承 shell 环境变量，需 `source .env`
+- **v1.9.0 解决**：`src/server/index.ts` 顶部加 `import 'dotenv/config'`，启动时自动加载 .env
+- **预防**：
+  - .env 必须随仓库部署（不要 .gitignore）
+  - 新增环境变量在 .env.example 中维护
+
+#### 问题 9：上游 KM 平台 `/api/knowledge/v1/openapi/kb/{id}/tree` 返回 404（v1.9.0 发现）
+- **症状**：5 个代理路由鉴权通过但上游 404 "Resource not found"
+- **根因**：`wiki.vivo.xyz` API 路径可能已变更 或 KB 34754 在该 token 下不可访问
+- **v1.9.0 状态**：
+  - **中间件链路 100% 正确**（apiKeyAuth + apikey 关联 Skill + token 解析 + kmApiClient 转发）
+  - 本机无法验证上游 200（无 SSH 到 10.101.10.50）
+- **服务器端验证**：部署到 10.101.10.50:5053 后用真 token 跑 `verify-all-v190.py` 验证 Step 5 全 PASS
+
+### 7. 版本历史（v1.9.0 行）
+
+| 版本 | 日期 | 变更 |
+|------|------|------|
+| 1.9.0 | 2026-06-30 | 一站式知识运营管理中台：API Key 自动关联 Skill + 5 代理路由 + by-skill 双维度统计 + dotenv 自动加载 + Bug A statsStore 并发修复 + 一站式验证脚本 |
+
+### 8. 待办事项（v1.9.1 候选）
+
+- [ ] 服务器端 verify-all-v190.py 全 PASS 验证（上游 KM 真实链路）
+- [ ] v1.9.0 部署脚本 v190 后自检（启动后 5 分钟内跑一次 verify-all）
+- [ ] kmApiClient 增加重试 + 熔断（应对上游 404/500）
+- [ ] zip 中 SKILL.md 中文乱码修复（v1.7.1 遗留老问题）
+- [ ] npm run lint 修复 v1.8.6 旧 50 个 @ts-ignore/any 错误

@@ -25,6 +25,8 @@ export interface TreeNode {
   hasChild: boolean
   spaceName: string
   kbName: string
+  // v1.8.6: 递归树形结构(由 buildTreeFromFlat 填充)
+  children?: TreeNode[]
 }
 
 export interface DiagnoseResult {
@@ -39,8 +41,9 @@ export type ProductType = 'skill' | 'mcp' | 'ai_template' | 'openapi' | 'tree'
 export interface ProductItem {
   type: ProductType
   name: string
+  // v1.8.6: description 全栈必填,服务端 routes/wizard.ts generateJob 已设
   description: string
-  icon: string
+  icon?: string
   downloadUrl?: string
   content?: string
   mimeType?: string
@@ -51,15 +54,21 @@ export interface ProductItem {
 
 export interface GenerateResult {
   jobId: string
+  status: 'pending' | 'running' | 'done' | 'error'
+  // v1.8.6: 服务端 generate 初始返回 5 个 pending 占位
   products: ProductItem[]
 }
 
 export interface JobStatus {
   jobId: string
-  status: 'pending' | 'running' | 'completed' | 'failed'
+  // v1.8.6 对齐服务端 routes/wizard.ts WizardJob.status 枚举
+  // 服务端定义: 'pending' | 'running' | 'done' | 'error'
+  status: 'pending' | 'running' | 'done' | 'error'
   progress: number
   message?: string
-  result?: GenerateResult
+  // v1.8.6: 状态响应也包含 products 数组(对齐服务端 StatusResponse.products)
+  products?: ProductItem[]
+  error?: string
 }
 
 export interface ApiResponse<T> {
@@ -96,37 +105,26 @@ export interface AiPromptsResponse {
   files: AiPromptFile[]
 }
 
+// v1.8.6: api.ts 拦截器已 unwrap response.data,但 axios 类型签名仍包 AxiosResponse
+// 这里用 .then 转换 + as any 强转,避免改 5 个 services 的大面积改动
+const unwrap = <T>(p: Promise<{ data: T }>): Promise<T> => p.then(r => r.data)
+
 export const wizardApi = {
-  init: (credential: KBCredential) =>
-    api.post<ApiResponse<KBInfo>>('/wizard/init', credential),
+  init: (credential: KBCredential): Promise<ApiResponse<KBInfo>> =>
+    unwrap(api.post('/wizard/init', credential)),
 
-  diagnose: (kbId: string, token: string) =>
-    api.post<ApiResponse<DiagnoseResult>>('/wizard/diagnose', { kbId, token }),
+  diagnose: (kbId: string, token: string): Promise<ApiResponse<DiagnoseResult>> =>
+    unwrap(api.post('/wizard/diagnose', { kbId, token })),
 
-  generate: (kbId: string, token: string) =>
-    api.post<ApiResponse<GenerateResult>>('/wizard/generate', { kbId, token }),
+  generate: (kbId: string, token: string): Promise<ApiResponse<GenerateResult>> =>
+    unwrap(api.post('/wizard/generate', { kbId, token })),
 
-  getStatus: (jobId: string) =>
-    api.get<ApiResponse<JobStatus>>(`/wizard/status/${jobId}`),
+  getStatus: (jobId: string): Promise<ApiResponse<JobStatus>> =>
+    unwrap(api.get(`/wizard/status/${jobId}`)),
 
-  getMcpConfigs: (kbId: number, kbName: string, accessToken: string) =>
-    api.post<ApiResponse<McpConfigsResponse>>('/wizard/mcp-configs', {
-      kbId,
-      kbName,
-      accessToken,
-    }),
+  getMcpConfigs: (kbId: number, kbName: string, accessToken: string): Promise<ApiResponse<McpConfigsResponse>> =>
+    unwrap(api.post('/wizard/mcp-configs', { kbId, kbName, accessToken })),
 
-  getAiPrompts: (kbId: number, kbName: string, accessToken: string, description?: string) =>
-    api.post<ApiResponse<AiPromptsResponse>>('/wizard/ai-prompts', {
-      kbId,
-      kbName,
-      accessToken,
-      description,
-    }),
-
-  getOpenApiSpecUrl: (kbId: number, kbName: string) =>
-    `/api/wizard/openapi.json?kbId=${kbId}&kbName=${encodeURIComponent(kbName)}`,
-
-  getSwaggerUrl: (kbId: number, kbName: string) =>
-    `/api/wizard/swagger?kbId=${kbId}&kbName=${encodeURIComponent(kbName)}`,
+  getAiPrompts: (kbId: number, kbName: string, accessToken: string, description?: string): Promise<ApiResponse<AiPromptsResponse>> =>
+    unwrap(api.post('/wizard/ai-prompts', { kbId, kbName, accessToken, description })),
 }

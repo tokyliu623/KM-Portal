@@ -16,6 +16,9 @@ interface PendingLog {
   latencyMs: number
   ip: string
   userAgent: string
+  /** v1.9.0: Skill 关联（按 Skill 维度统计） */
+  skillId?: string
+  skillName?: string
 }
 
 const pendingLogs: PendingLog[] = []
@@ -63,6 +66,8 @@ export function requestLogger(req: LogRequest, res: Response, next: NextFunction
       latencyMs: latency,
       ip: getClientIp(req) || '',
       userAgent: (req.headers['user-agent'] as string) || '',
+      skillId: req.skillId,
+      skillName: req.skillName,
     })
   })
 

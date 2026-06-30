@@ -8,7 +8,7 @@ router.get('/health', (_req, res) => {
   res.json({
     status: 'ok',
     service: 'KM-Portal',
-    version: '1.0.0',
+    version: '1.9.0',
     timestamp: new Date().toISOString(),
   })
 })

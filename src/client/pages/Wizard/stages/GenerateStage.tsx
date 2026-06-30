@@ -20,8 +20,8 @@ const defaultProducts: ProductItem[] = [
     icon: 'ApiOutlined',
   },
   {
-    type: 'template',
-    name: 'AI 模板',
+    type: 'ai_template',
+    name: 'AI 指令模板',
     description: '5 类 AI 指令模板，涵盖写作/阅读/问答/检索/知识管理',
     icon: 'BulbOutlined',
   },
@@ -32,7 +32,7 @@ const defaultProducts: ProductItem[] = [
     icon: 'FileTextOutlined',
   },
   {
-    type: 'structure',
+    type: 'tree',
     name: '目录结构',
     description: '知识库目录树可视化，JSON + Markdown 格式',
     icon: 'FolderOutlined',
@@ -59,6 +59,7 @@ export function GenerateStage() {
     setLoading(true)
     setError(null)
     try {
+      // v1.8.6: wizardApi 已 unwrap
       const res = await wizardApi.generate(credential.kbId, credential.token)
       if (res.success && res.data) {
         setProducts(res.data.products)

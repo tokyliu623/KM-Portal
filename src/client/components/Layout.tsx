@@ -9,6 +9,7 @@ import {
   ThunderboltOutlined,
   ApiOutlined,
   RocketOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons'
 
 const { Sider, Content } = AntLayout
@@ -19,6 +20,7 @@ const menuItems = [
   { key: '/browser', icon: <FolderOpenOutlined />, label: '知识库浏览器' },
   { key: '/editor', icon: <EditOutlined />, label: '文档编辑器' },
   { key: '/skill-gen', icon: <ThunderboltOutlined />, label: 'Skill 生成' },
+  { key: '/stats', icon: <BarChartOutlined />, label: '调用统计' },
   { key: '/api-docs', icon: <ApiOutlined />, label: 'API 文档' },
   { key: '/wizard', icon: <RocketOutlined />, label: 'Workflow 向导' },
   { key: '/km-studio', icon: <RocketOutlined />, label: 'KM Studio' },

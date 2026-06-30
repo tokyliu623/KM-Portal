@@ -2,8 +2,9 @@ import { Router } from 'express';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { buildSkillZip } from '../services/skillPackage';
-import { translateToEnglish, asciiFallback } from '../services/translator';
+import { buildSkillZip } from '../services/skillPackage.js';
+import { translateToEnglish, asciiFallback } from '../services/translator.js';
+import { apiKeyStore } from '../services/apiKeyStore.js';
 import { getField } from '../utils/fieldCompat.js';
 const router = Router();
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -130,6 +131,17 @@ router.post('/', async (req, res) => {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
+        // v1.9.0: 自动生成并关联 API Key
+        const generatedApiKey = `kmp-skill-${uuidv4().replace(/-/g, '')}`;
+        const apiKeyRecord = await apiKeyStore.createForSkill({
+            name: `${nameEn} (KB ${kbIdNum})`,
+            key: generatedApiKey,
+            skillId: skill.id,
+            skillName: skill.name,
+            kbId: kbIdNum,
+        });
+        skill.apiKeyId = apiKeyRecord.id;
+        skill.apiKey = generatedApiKey;
         await withLock('skill', async () => {
             const store = await readStore();
             store.skills.push(skill);
@@ -206,6 +218,7 @@ router.get('/:id/export', async (req, res) => {
             kbId: skill.kbId,
             kbName: skill.kbName,
             content: skill.content,
+            apiKey: skill.apiKey,
         });
         const safeName = skill.name
             .replace(/[^\w\u4e00-\u9fa5\-_.]/g, '-')

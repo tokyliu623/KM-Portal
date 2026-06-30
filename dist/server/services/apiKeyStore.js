@@ -57,6 +57,34 @@ export const apiKeyStore = {
             return apiKey;
         });
     },
+    /** v1.9.0: 为 Skill 自动生成并关联 API Key */
+    async createForSkill(data) {
+        if (!data.name || data.name.trim().length === 0) {
+            throw new Error('Invalid name: name is required');
+        }
+        if (!data.key || data.key.length < 10) {
+            throw new Error('Invalid key: must be at least 10 characters');
+        }
+        if (!data.skillId || !data.skillName || !data.kbId) {
+            throw new Error('Invalid Skill association: skillId/skillName/kbId are required');
+        }
+        return withLock('apikey', async () => {
+            const filePath = resolveFilePath();
+            const store = await readStore(filePath);
+            const apiKey = {
+                id: uuidv4(),
+                name: data.name.trim(),
+                key: data.key,
+                createdAt: new Date().toISOString(),
+                skillId: data.skillId,
+                skillName: data.skillName,
+                kbId: data.kbId,
+            };
+            store.keys.push(apiKey);
+            await writeStore(filePath, store);
+            return apiKey;
+        });
+    },
     async findAll() {
         const filePath = resolveFilePath();
         const store = await readStore(filePath);

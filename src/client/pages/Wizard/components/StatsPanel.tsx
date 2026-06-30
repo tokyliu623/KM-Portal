@@ -10,18 +10,19 @@ const { Text } = Typography
 
 interface StatsPanelProps {
   kbId: string
-  kbName: string
-  docCount: number
-  treeCount: number
+  // v1.8.6: 所有 props 改为可选,KMStudioPage 只传 kbId 也能编译通过
+  kbName?: string
+  docCount?: number
+  treeCount?: number
   recentCalls?: number
   avgLatency?: number
 }
 
 export function StatsPanel({
   kbId,
-  kbName,
-  docCount,
-  treeCount,
+  kbName = '',
+  docCount = 0,
+  treeCount = 0,
   recentCalls = 0,
   avgLatency = 0,
 }: StatsPanelProps) {

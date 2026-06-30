@@ -1,7 +1,30 @@
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
 import express from 'express'
 import request from 'supertest'
-import skillRouter from '../../src/server/routes/skill'
+
+// v1.9.0: 路由使用了 translator + apiKeyStore，需要 mock
+vi.mock('../../src/server/services/translator', () => ({
+  translateToEnglish: vi.fn().mockImplementation((name: string) => Promise.resolve(name)),
+  asciiFallback: vi.fn().mockImplementation((name: string) => name.replace(/[^a-zA-Z0-9_-]/g, 'x')),
+}))
+
+vi.mock('../../src/server/services/apiKeyStore', () => ({
+  apiKeyStore: {
+    createForSkill: vi.fn().mockImplementation((data: { name: string; key: string; skillId: string; skillName: string; kbId: number }) =>
+      Promise.resolve({
+        id: 'apikey-test-1',
+        name: data.name,
+        key: data.key,
+        createdAt: new Date().toISOString(),
+        skillId: data.skillId,
+        skillName: data.skillName,
+        kbId: data.kbId,
+      })
+    ),
+  },
+}))
+
+const skillRouter = (await import('../../src/server/routes/skill')).default
 
 describe('Skill route field compatibility (v1.7.3 regression)', () => {
   let app: express.Express
@@ -9,16 +32,6 @@ describe('Skill route field compatibility (v1.7.3 regression)', () => {
   beforeAll(() => {
     app = express()
     app.use(express.json())
-
-    // Mock translator to avoid network calls
-    vi.mock('../../src/server/services/translator', () => ({
-      translateToEnglish: vi.fn().mockImplementation((name: string) => Promise.resolve(name)),
-      asciiFallback: vi.fn().mockImplementation((name: string) =>
-        name.replace(/[^\x00-\x7F]/g, 'x')
-      ),
-    }))
-
-    // Mount router like in production
     app.use('/api/skill', skillRouter)
   })
 

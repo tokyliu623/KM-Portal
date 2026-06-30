@@ -5,6 +5,10 @@ export interface ApiKey {
   createdAt: string;
   /** ISO 8601 timestamp of last API key usage */
   lastUsed?: string;
+  /** v1.9.0: Skill 关联（生成时自动绑定） */
+  skillId?: string;
+  skillName?: string;
+  kbId?: number;
 }
 
 export interface KBDocument {

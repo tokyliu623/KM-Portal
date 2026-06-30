@@ -13,6 +13,7 @@ export function InitStage() {
     setLoading(true)
     setError(null)
     try {
+      // v1.8.6: wizardApi 已 unwrap,res 直接是 ApiResponse
       const res = await wizardApi.init(credential)
       if (res.success && res.data) {
         setCredential(credential)

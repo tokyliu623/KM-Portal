@@ -117,14 +117,16 @@ function KMStudioPage() {
       }
       try {
         const res = await wizardApi.getStatus(state.jobId)
-        if (res.data.success && res.data.data) {
+        // v1.8.6: wizardApi 已 unwrap response.data,res 直接是 ApiResponse
+        if (res.success && res.data) {
           useWizardStore.setState({
-            jobStatus: res.data.data.status,
-            products: res.data.data.result?.products ?? state.products,
+            jobStatus: res.data.status,
+            products: res.data.products ?? state.products,
           })
-          if (res.data.data.status === 'completed' || res.data.data.status === 'failed') {
+          // v1.8.6 对齐服务端 status 枚举 done/error
+          if (res.data.status === 'done' || res.data.status === 'error') {
             setPolling(false)
-            if (res.data.data.status === 'completed') {
+            if (res.data.status === 'done') {
               message.success('产物生成完成')
               setActiveTab('products')
             } else {
@@ -157,12 +159,13 @@ function KMStudioPage() {
     }
     try {
       const res = await wizardApi.generate(kbId, accessToken)
-      if (res.data.success && res.data.data) {
-        useWizardStore.setState({ jobId: res.data.data.jobId, jobStatus: 'pending', products: res.data.data.products ?? [] })
+      // v1.8.6: wizardApi 已 unwrap,res 直接是 ApiResponse
+      if (res.success && res.data) {
+        useWizardStore.setState({ jobId: res.data.jobId, jobStatus: 'pending', products: res.data.products ?? [] })
         setPolling(true)
         setActiveTab('products')
       } else {
-        message.error(res.data.error || '生成请求失败')
+        message.error(res.error || '生成请求失败')
       }
     } catch (e) {
       message.error('网络错误')
@@ -201,12 +204,12 @@ function KMStudioPage() {
 
       <Tabs
         activeKey={activeTab}
-        onChange={(k) => setActiveTab(k as 'init' | 'products' | 'tree' | 'stats')}
+        onChange={(k: string) => setActiveTab(k as 'init' | 'products' | 'tree' | 'stats')}
         items={[
           {
             key: 'init',
             label: '1. 凭证初始化',
-            children: <KBCredentialForm onSuccess={handleInit} />,
+            children: <KBCredentialForm onSubmit={handleInit} />,
           },
           {
             key: 'tree',

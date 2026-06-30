@@ -3,6 +3,7 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import { operationStatsService } from '../services/operationStatsService.js'
 import type { KpiEntry } from '../services/operationStatsService.js'
+import { statsService } from '../services/statsService.js'
 
 const router = Router()
 const DATA_DIR = path.join(process.cwd(), 'data')
@@ -177,6 +178,20 @@ router.get('/health/:kbId', async (req, res) => {
     res.json({ success: true, data: { kbId, days, ...score } })
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to compute health score' })
+  }
+})
+
+/** v1.9.0: 按 Skill 名称 + KB ID 双维度统计 */
+router.get('/by-skill', async (req, res) => {
+  try {
+    const skillName = req.query.skillName as string | undefined
+    const skillId = req.query.skillId as string | undefined
+    const kbId = req.query.kbId as string | undefined
+    const days = parseInt(req.query.days as string) || 7
+    const data = await statsService.getStatsBySkill({ skillName, skillId, kbId, days })
+    res.json({ success: true, data })
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to fetch skill stats' })
   }
 })
 
