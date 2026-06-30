@@ -383,6 +383,8 @@ build: 构建相关（如 pkg 打包）
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| 1.9.1 | 2026-06-30 | 修复 statsStore 并发锁漏洞：withLock 由 Set 自旋锁（race condition）改为 Promise 链式串行化（FIFO 严格）；同步更新 package.json version 1.7.1→1.9.1 + index.ts 1.9.0→1.9.1；新增 src/server/services/dataInit.ts + 5 个测试（dataInit.test.ts）实现服务器启动 data/ 目录与 5 个 JSON 兜底（tokens/skills/api-keys/api-logs/operation-stats），幂等不覆盖现有文件；.gitignore 新增 `data/*.json` 排除 + data/.gitkeep 占位，移除 data/skills.json 等从 git 索引（修复真实 API Key 泄露风险）；AGENTS.md 老问题清单新增问题 7；158/158 测试通过 |
+| 1.9.0 | 2026-06-30 | v1.9.0 完整功能：src/server/services/apiKeyStore.ts 新增 createForSkill + skillId 绑定；skillPackage.ts 在 zip 中嵌入 API Key（SKILL_KEY.txt）；statsService.ts 新增 getStatsBySkill；routes/skill.ts POST 自动生成 API Key + export 嵌入；routes/stats.ts 新增 /by-skill 路由 + ApiLog 字段；index.ts /api/kb 加 apiKeyAuth 中间件；middleware/logger.ts 记录 apiKeyId/skillId；types/index.ts ApiCallRecord 加 apiKeyId/skillId；4 个新测试（statsConcurrency/statsStoreV190/statsService/apiKeyStoreV190）共 153/153 通过 |
 | 1.8.3 | 2026-06-30 | 运营效果分析：src/server/services/operationStatsService.ts (4 方法：getApiLogStats/getManualKpis/saveManualKpi/generateTrendData/calculateHealthScore) + data/operation-stats.json (KB 维度 KPI 存储) + stats.ts 增 3 端点 (GET /operation/:kbId, POST /operation/:kbId, GET /health/:kbId) + tests/unit/operationStatsService.test.ts (10 测试 4 维度)；TDD 流程：RED 10/10 fail → GREEN 10/10 pass；ESLint + tsc + esbuild EXIT 0 |
 | 1.7.5 | 2026-06-30 | 部署脚本 5 大漏洞修复：新增 verify-deploy.sh 预检 + 重写 deploy-server.sh + AGENTS.md 部署经验章节 |
 | 1.7.4 | 2026-06-30 | Skill trigger 兜底：skillPackage.ts 新增 DEFAULT_TRIGGER_WORDS（8 个中英文+别名）；buildSkillMd/buildReadme 用 effectiveTriggers；verify-skill-e2e.sh trigger 检测接受空列表+非空列表；新增 skillPackageV174.test.ts 3 测试 |
@@ -433,7 +435,8 @@ build: 构建相关（如 pkg 打包）
 - [ ] v1.8.2 AI 指令模板生成 (T+13d)
 - [ ] v1.8.3 运营效果分析（降级方案）(T+16d)
 - [ ] v1.8.4 OpenAPI 规范生成 (T+18d)
-- [ ] v1.9.0 前端向导完善 + 端到端联调 (T+25d)
+- [x] v1.9.0 前端向导完善 + 端到端联调 (T+25d)
+- [x] v1.9.1 statsStore 并发锁漏洞修复 (Promise 链式串行化 FIFO, 2026-06-30)
 
 ## 老问题清单（v1.7.1 起维护，避免重复出现）
 
@@ -540,6 +543,33 @@ build: 构建相关（如 pkg 打包）
   - 任何 Skill 包结构调整（zip 内容/frontmatter/目录派生）必须先跑本脚本验证
   - 任何 KB API / Skill API 变更必须先跑本脚本验证兼容性
   - 服务器端真实环境验证 ≠ 本地 Vitest 单元测试（前者验证端到端链路）
+
+### 问题 7：statsStore 并发锁 race condition（v1.9.0 引入，v1.9.1 发现并修复）
+- **症状**：v1.9.0 statsStore 用 `Set<string>` 自旋锁 + `setTimeout(10)` 等待，50/100 并发 `recordCall` 时存在 race condition：await 节点交错导致 `total < 50/100` 或 JSON 文件被写坏
+- **根因**：
+  - 自旋锁的 `while (locks.has(key)) await setTimeout(10)` 不是 FIFO，多个 awaiter 之间没有顺序保证
+  - JS 事件循环：两个 awaiter 可能几乎同时进入 `locks.add` 之前的间隙（TOCTOU 漏洞）
+  - 高并发下 `readStore` 读到的内容与 `writeStore` 写入的内容可能交叉
+- **v1.9.1 解决**：
+  1. `src/server/services/statsStore.ts:31-37` 将 `withLock` 改为 **Promise 链式串行化**：
+     ```ts
+     let writeQueue: Promise<unknown> = Promise.resolve()
+     async function withLock<T>(fn: () => Promise<T>): Promise<T> {
+       const next = writeQueue.then(fn, fn)
+       writeQueue = next.catch(() => undefined)
+       return next
+     }
+     ```
+  2. 调用点：`withLock('stats', async () => {...})` → `withLock(async () => {...})`（去掉 key 参数）
+  3. 读路径 `getStats` / `getRawCalls` 不加锁（一致性由 `readStore` 读取已 fsync 文件保证）
+- **设计选择**：
+  - 用 `writeQueue.then(fn, fn)` 而非 `writeQueue.then(fn)`：fn 失败不污染 queue，后续仍能继续
+  - `writeQueue = next.catch(() => undefined)`：queue 永远 resolved，新任务能链上
+  - 不使用 mutex 库（如 `async-mutex`）：项目零依赖要求，FIFO Promise 队列已足够
+- **预防**：
+  - 任何需要互斥的 file-IO 写路径**必须**用此模式（或 async-mutex），**禁止** Set 自旋锁
+  - 单元测试 `tests/unit/statsConcurrency.test.ts` 50/100 并发断言 total=50/150，是 FIFO 正确性的强测
+  - CI 必跑 `statsConcurrency.test.ts` + `statsStoreV190.test.ts`
 
 ## 服务器部署经验（v1.7.5 起维护）
 

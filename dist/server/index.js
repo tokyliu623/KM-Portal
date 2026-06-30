@@ -9,6 +9,7 @@ import diagRouter from './routes/diag.js';
 import wizardRouter from './routes/wizard.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/logger.js';
+import { apiKeyAuth } from './middleware/apiKeyAuth.js';
 import { KMApiClient } from './services/kmApiClient.js';
 const __dirname = path.resolve();
 const STATIC_DIR = path.join(__dirname, 'dist/client');
@@ -27,13 +28,15 @@ app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
         service: 'KM-Portal',
-        version: '1.0.0',
+        version: '1.9.1',
         timestamp: new Date().toISOString(),
     });
 });
 app.use('/api/admin', adminRouter);
 app.use('/api/skill', skillRouter);
-app.use('/api/kb', kbRouter);
+// v1.9.0 KB 代理 5 路由需要 Bearer API Key 鉴权
+// 业务流程: 创建 Skill → 自动生成 API Key → KB 代理用 apiKey 鉴权
+app.use('/api/kb', apiKeyAuth, kbRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/diag', diagRouter);
 app.use('/api/wizard', wizardRouter);

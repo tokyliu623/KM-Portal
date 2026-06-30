@@ -36,7 +36,7 @@ async function writeStore(filePath, store) {
     await fs.writeFile(filePath, JSON.stringify(store, null, 2), 'utf-8');
 }
 export const apiKeyStore = {
-    async create(name, key) {
+    async create(name, key, options) {
         if (!name || typeof name !== 'string' || name.trim().length === 0) {
             throw new Error('Invalid name: name is required and must be a non-empty string');
         }
@@ -50,6 +50,33 @@ export const apiKeyStore = {
                 id: uuidv4(),
                 name: name.trim(),
                 key,
+                kbId: options?.kbId,
+                skillId: options?.skillId,
+                skillName: options?.skillName,
+                createdAt: new Date().toISOString(),
+            };
+            store.keys.push(apiKey);
+            await writeStore(filePath, store);
+            return apiKey;
+        });
+    },
+    async createForSkill(params) {
+        if (!params.skillId || typeof params.skillId !== 'string' || params.skillId.trim().length === 0) {
+            throw new Error('Invalid skillId: skillId is required');
+        }
+        if (!params.key || typeof params.key !== 'string' || params.key.length < 10) {
+            throw new Error('Invalid API key: key must be at least 10 characters');
+        }
+        return withLock('apikey', async () => {
+            const filePath = resolveFilePath();
+            const store = await readStore(filePath);
+            const apiKey = {
+                id: uuidv4(),
+                name: params.name.trim(),
+                key: params.key,
+                kbId: params.kbId,
+                skillId: params.skillId,
+                skillName: params.skillName,
                 createdAt: new Date().toISOString(),
             };
             store.keys.push(apiKey);

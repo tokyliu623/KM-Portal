@@ -1,10 +1,12 @@
 import { Router } from 'express'
 import { promises as fs } from 'fs'
 import path from 'path'
+import { randomBytes } from 'crypto'
 import { v4 as uuidv4 } from 'uuid'
 import { buildSkillZip } from '../services/skillPackage'
 import { translateToEnglish, asciiFallback } from '../services/translator'
 import { getField } from '../utils/fieldCompat.js'
+import { apiKeyStore } from '../services/apiKeyStore.js'
 
 const router = Router()
 const DATA_DIR = path.join(process.cwd(), 'data')
@@ -163,9 +165,34 @@ router.post('/', async (req, res) => {
       await writeStore(store)
     })
 
-    const responseBody: Record<string, unknown> = { success: true, data: skill }
+    let apiKey: string | undefined
+    let apiKeyError: string | undefined
+    try {
+      const rawKey = `kmk_${randomBytes(24).toString('hex')}`
+      const keyRecord = await apiKeyStore.createForSkill({
+        name: `skill:${skill.name}`,
+        key: rawKey,
+        kbId: String(skill.kbId),
+        skillId: skill.id,
+        skillName: skill.name,
+      })
+      apiKey = keyRecord.key
+    } catch (err) {
+      console.error('[Skill API Key Error]:', err)
+      apiKeyError = err instanceof Error ? err.message : String(err)
+    }
+
+    const responseData: Record<string, unknown> = { ...skill }
+    if (apiKey) {
+      responseData.apiKey = apiKey
+    }
+    const responseBody: Record<string, unknown> = { success: true, data: responseData }
     if (translationWarning) {
       responseBody.warning = translationWarning
+    }
+    if (apiKeyError) {
+      responseBody.warning = (responseBody.warning ? String(responseBody.warning) + ' | ' : '') +
+        `API Key 自动生成失败: ${apiKeyError}`
     }
     res.json(responseBody)
   } catch (error) {
@@ -241,6 +268,16 @@ router.get('/:id/export', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Skill not found' })
     }
 
+    // v1.9.0 查找该 Skill 关联的 API Key,嵌入 zip 内的 config/user.json
+    let apiKeyForZip: string | undefined
+    try {
+      const allKeys = await apiKeyStore.findAll()
+      const matched = allKeys.find((k) => k.skillId === skill.id)
+      apiKeyForZip = matched?.key
+    } catch (err) {
+      console.error('[Skill Export] Failed to look up API key:', err)
+    }
+
     const zipBuffer = await buildSkillZip({
       skillId: skill.id,
       skillName: skill.name,
@@ -249,6 +286,7 @@ router.get('/:id/export', async (req, res) => {
       kbId: skill.kbId,
       kbName: skill.kbName,
       content: skill.content,
+      apiKey: apiKeyForZip,
     })
 
     const safeName = skill.name

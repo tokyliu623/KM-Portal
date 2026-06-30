@@ -34,6 +34,8 @@ export function requestLogger(req, res, next) {
         pendingLogs.push({
             apiKeyId: req.apiKeyId,
             kbId: req.kbId || '',
+            skillId: req.skillId || '',
+            skillName: req.skillName || '',
             endpoint: req.path,
             method: req.method,
             statusCode: res.statusCode,

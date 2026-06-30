@@ -46,7 +46,7 @@ async function writeStore(filePath: string, store: ApiKeysStore): Promise<void> 
 }
 
 export const apiKeyStore = {
-  async create(name: string, key: string): Promise<ApiKey> {
+  async create(name: string, key: string, options?: { kbId?: string; skillId?: string; skillName?: string }): Promise<ApiKey> {
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       throw new Error('Invalid name: name is required and must be a non-empty string')
     }
@@ -60,6 +60,40 @@ export const apiKeyStore = {
         id: uuidv4(),
         name: name.trim(),
         key,
+        kbId: options?.kbId,
+        skillId: options?.skillId,
+        skillName: options?.skillName,
+        createdAt: new Date().toISOString(),
+      }
+      store.keys.push(apiKey)
+      await writeStore(filePath, store)
+      return apiKey
+    })
+  },
+
+  async createForSkill(params: {
+    name: string
+    key: string
+    skillId: string
+    skillName: string
+    kbId: string | number
+  }): Promise<ApiKey> {
+    if (!params.skillId || typeof params.skillId !== 'string' || params.skillId.trim().length === 0) {
+      throw new Error('Invalid skillId: skillId is required')
+    }
+    if (!params.key || typeof params.key !== 'string' || params.key.length < 10) {
+      throw new Error('Invalid API key: key must be at least 10 characters')
+    }
+    return withLock('apikey', async () => {
+      const filePath = resolveFilePath()
+      const store = await readStore(filePath)
+      const apiKey: ApiKey = {
+        id: uuidv4(),
+        name: params.name.trim(),
+        key: params.key,
+        kbId: params.kbId,
+        skillId: params.skillId,
+        skillName: params.skillName,
         createdAt: new Date().toISOString(),
       }
       store.keys.push(apiKey)

@@ -1,6 +1,6 @@
 {
   "name": "km-portal",
-  "version": "1.7.1",
+  "version": "1.9.1",
   "description": "知识库运营一站式平台",
   "type": "module",
   "scripts": {

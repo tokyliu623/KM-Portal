@@ -5,11 +5,15 @@ import { getClientIp } from '../utils/index.js'
 interface LogRequest extends Request {
   apiKeyId?: string
   kbId?: string
+  skillId?: string
+  skillName?: string
 }
 
 interface PendingLog {
   apiKeyId: string
   kbId: string
+  skillId: string
+  skillName: string
   endpoint: string
   method: string
   statusCode: number
@@ -57,6 +61,8 @@ export function requestLogger(req: LogRequest, res: Response, next: NextFunction
     pendingLogs.push({
       apiKeyId: req.apiKeyId,
       kbId: req.kbId || '',
+      skillId: req.skillId || '',
+      skillName: req.skillName || '',
       endpoint: req.path,
       method: req.method,
       statusCode: res.statusCode,

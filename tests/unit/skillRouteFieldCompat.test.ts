@@ -14,6 +14,7 @@ describe('Skill route field compatibility (v1.7.3 regression)', () => {
     vi.mock('../../src/server/services/translator', () => ({
       translateToEnglish: vi.fn().mockImplementation((name: string) => Promise.resolve(name)),
       asciiFallback: vi.fn().mockImplementation((name: string) =>
+        // eslint-disable-next-line no-control-regex
         name.replace(/[^\x00-\x7F]/g, 'x')
       ),
     }))

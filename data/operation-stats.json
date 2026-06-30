@@ -1,4 +1,0 @@
-{
-  "_comment": "运营 KPI 手工录入存储。结构: { kbId: KpiEntry[] }。详见 src/server/services/operationStatsService.ts",
-  "kbId-34754": []
-}

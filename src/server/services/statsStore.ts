@@ -3,12 +3,18 @@ import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 
 const DATA_DIR = path.join(process.cwd(), 'data')
-const STATS_FILE = path.join(DATA_DIR, 'api-logs.json')
+const DEFAULT_STATS_FILE = path.join(DATA_DIR, 'api-logs.json')
+
+function statsFile(): string {
+  return process.env.STATS_FILE || DEFAULT_STATS_FILE
+}
 
 interface ApiCallRecord {
   id: string
   apiKeyId: string
   kbId: string
+  skillId: string
+  skillName: string
   endpoint: string
   method: string
   statusCode: number
@@ -22,9 +28,18 @@ interface StatsStore {
   calls: ApiCallRecord[]
 }
 
+let writeQueue: Promise<unknown> = Promise.resolve()
+
+async function withLock<T>(fn: () => Promise<T>): Promise<T> {
+  const next = writeQueue.then(fn, fn)
+  writeQueue = next.catch(() => undefined)
+  return next
+}
+
 async function readStore(): Promise<StatsStore> {
   try {
-    const content = await fs.readFile(STATS_FILE, 'utf-8')
+    const file = statsFile()
+    const content = await fs.readFile(file, 'utf-8')
     return JSON.parse(content)
   } catch {
     return { calls: [] }
@@ -32,23 +47,26 @@ async function readStore(): Promise<StatsStore> {
 }
 
 async function writeStore(store: StatsStore): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true })
-  await fs.writeFile(STATS_FILE, JSON.stringify(store, null, 2), 'utf-8')
+  const file = statsFile()
+  await fs.mkdir(path.dirname(file), { recursive: true })
+  await fs.writeFile(file, JSON.stringify(store, null, 2), 'utf-8')
 }
 
+export type { ApiCallRecord }
+
 export async function recordCall(data: Omit<ApiCallRecord, 'id' | 'createdAt'>): Promise<void> {
-  const store = await readStore()
-  store.calls.push({
-    ...data,
-    id: uuidv4(),
-    createdAt: new Date().toISOString(),
+  await withLock(async () => {
+    const store = await readStore()
+    store.calls.push({
+      ...data,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+    })
+    if (store.calls.length > 10000) {
+      store.calls = store.calls.slice(-5000)
+    }
+    await writeStore(store)
   })
-  // Retention policy: keep most recent 5000 records after exceeding 10000 limit.
-  // For long-term archival, consider rotating logs to a daily file.
-  if (store.calls.length > 10000) {
-    store.calls = store.calls.slice(-5000)
-  }
-  await writeStore(store)
 }
 
 export async function getStats(kbId?: string, days: number = 7): Promise<{
@@ -78,4 +96,21 @@ export async function getStats(kbId?: string, days: number = 7): Promise<{
     byEndpoint,
     avgLatency: calls.length > 0 ? Math.round(totalLatency / calls.length) : 0,
   }
+}
+
+export async function getRawCalls(
+  kbId?: string,
+  days: number = 7,
+  skillName?: string,
+  skillId?: string,
+): Promise<ApiCallRecord[]> {
+  const store = await readStore()
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
+  return store.calls.filter((c) => {
+    if (new Date(c.createdAt).getTime() <= cutoff) return false
+    if (kbId && c.kbId !== kbId) return false
+    if (skillName && c.skillName !== skillName) return false
+    if (skillId && c.skillId !== skillId) return false
+    return true
+  })
 }

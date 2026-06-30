@@ -2,17 +2,27 @@ import { Router } from 'express';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { operationStatsService } from '../services/operationStatsService.js';
+import { apiKeyStore } from '../services/apiKeyStore.js';
 const router = Router();
 const DATA_DIR = path.join(process.cwd(), 'data');
 const LOGS_FILE = path.join(DATA_DIR, 'api-logs.json');
-async function readLogs() {
+async function readLogsStore() {
     try {
         const content = await fs.readFile(LOGS_FILE, 'utf-8');
-        return JSON.parse(content);
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed))
+            return { calls: parsed };
+        if (parsed && Array.isArray(parsed.calls))
+            return parsed;
+        return { calls: [] };
     }
     catch {
-        return [];
+        return { calls: [] };
     }
+}
+async function readLogs() {
+    const store = await readLogsStore();
+    return store.calls;
 }
 router.get('/overview', async (_req, res) => {
     try {
@@ -150,6 +160,112 @@ router.get('/health/:kbId', async (req, res) => {
     }
     catch (error) {
         res.status(500).json({ success: false, error: 'Failed to compute health score' });
+    }
+});
+// v1.9.0 双维度统计:按 Skill 名称 + KB ID
+// 前端 Stats 页面 + 验证脚本 verify-all-v190.py 都依赖此端点
+router.get('/by-skill', async (req, res) => {
+    try {
+        const days = parseInt(req.query.days) || 7;
+        const skillNameFilter = req.query.skillName || undefined;
+        const kbIdFilter = req.query.kbId || undefined;
+        const logs = await readLogs();
+        const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+        const filtered = logs.filter((log) => {
+            const ts = new Date(log.timestamp).getTime();
+            if (ts < cutoff)
+                return false;
+            if (kbIdFilter && String(log.kbId) !== String(kbIdFilter))
+                return false;
+            if (skillNameFilter && log.skillName !== skillNameFilter)
+                return false;
+            return true;
+        });
+        // 兜底:用 apiKeyId 关联到 apiKeyStore 拿到 skillName
+        const apiKeyCache = new Map();
+        const resolveApiKey = async (apiKeyId) => {
+            if (!apiKeyId || apiKeyCache.has(apiKeyId))
+                return;
+            try {
+                const keys = await apiKeyStore.findAll();
+                const k = keys.find((kk) => kk.id === apiKeyId);
+                if (k) {
+                    apiKeyCache.set(apiKeyId, { skillId: k.skillId, skillName: k.skillName, kbId: k.kbId != null ? String(k.kbId) : undefined });
+                }
+            }
+            catch {
+                // ignore
+            }
+        };
+        const bySkillMap = new Map();
+        const byEndpointMap = new Map();
+        for (const log of filtered) {
+            let skillId = log.skillId;
+            let skillName = log.skillName;
+            let kbId = log.kbId;
+            if ((!skillId || !skillName) && log.apiKeyId) {
+                await resolveApiKey(log.apiKeyId);
+                const meta = apiKeyCache.get(log.apiKeyId);
+                if (meta) {
+                    skillId = skillId || meta.skillId;
+                    skillName = skillName || meta.skillName;
+                    kbId = kbId || meta.kbId;
+                }
+            }
+            // 始终输出,即使没有 skillName (unknown 也统计,便于诊断)
+            const key = `${skillName || 'unknown'}|${kbId || 'unknown'}`;
+            const latency = log.latencyMs ?? log.duration ?? 0;
+            if (!bySkillMap.has(key)) {
+                bySkillMap.set(key, {
+                    skillId: skillId || 'unknown',
+                    skillName: skillName || 'unknown',
+                    kbId: kbId || 'unknown',
+                    calls: 0,
+                    totalLatency: 0,
+                    errors: 0,
+                });
+            }
+            const s = bySkillMap.get(key);
+            s.calls++;
+            s.totalLatency += latency;
+            if (log.statusCode >= 400)
+                s.errors++;
+            byEndpointMap.set(log.path, (byEndpointMap.get(log.path) || 0) + 1);
+        }
+        const skills = Array.from(bySkillMap.values())
+            .map((s) => ({
+            skillId: s.skillId,
+            skillName: s.skillName,
+            kbId: s.kbId,
+            calls: s.calls,
+            totalLatency: s.totalLatency,
+            errors: s.errors,
+            avgLatency: s.calls > 0 ? Math.round(s.totalLatency / s.calls) : 0,
+            errorRate: s.calls > 0 ? Math.round((s.errors / s.calls) * 100) : 0,
+        }))
+            .sort((a, b) => b.calls - a.calls);
+        const total = skills.reduce((sum, s) => sum + s.calls, 0);
+        const totalLatency = skills.reduce((sum, s) => sum + s.totalLatency, 0);
+        const totalErrors = skills.reduce((sum, s) => sum + s.errors, 0);
+        res.json({
+            success: true,
+            data: {
+                total,
+                avgLatency: total > 0 ? Math.round(totalLatency / total) : 0,
+                errorRate: total > 0 ? Math.round((totalErrors / total) * 100) : 0,
+                days,
+                skills: skills.map(({ totalLatency: _tl, errors: _er, ...rest }) => {
+                    void _tl;
+                    void _er;
+                    return rest;
+                }),
+                byEndpoint: Object.fromEntries(byEndpointMap),
+            },
+        });
+    }
+    catch (error) {
+        console.error('[by-skill] error:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch by-skill stats' });
     }
 });
 export default router;

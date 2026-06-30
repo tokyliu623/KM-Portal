@@ -9,7 +9,9 @@ import diagRouter from './routes/diag.js'
 import wizardRouter from './routes/wizard.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { requestLogger } from './middleware/logger.js'
+import { apiKeyAuth } from './middleware/apiKeyAuth.js'
 import { KMApiClient } from './services/kmApiClient.js'
+import { ensureDataFiles } from './services/dataInit.js'
 
 const __dirname = path.resolve()
 const STATIC_DIR = path.join(__dirname, 'dist/client')
@@ -32,14 +34,16 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'KM-Portal',
-    version: '1.0.0',
+    version: '1.9.1',
     timestamp: new Date().toISOString(),
   })
 })
 
 app.use('/api/admin', adminRouter)
 app.use('/api/skill', skillRouter)
-app.use('/api/kb', kbRouter)
+// v1.9.0 KB 代理 5 路由需要 Bearer API Key 鉴权
+// 业务流程: 创建 Skill → 自动生成 API Key → KB 代理用 apiKey 鉴权
+app.use('/api/kb', apiKeyAuth, kbRouter)
 app.use('/api/stats', statsRouter)
 app.use('/api/diag', diagRouter)
 app.use('/api/wizard', wizardRouter)
@@ -52,9 +56,21 @@ app.get('*', (req, res) => {
 
 app.use(errorHandler)
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`KM-Portal server running on port ${PORT}`)
   console.log(`Health check: http://localhost:${PORT}/api/health`)
+
+  // v1.9.1: 启动时初始化 data/ 目录与兜底 JSON
+  try {
+    const initialized = await ensureDataFiles()
+    if (initialized.length > 0) {
+      console.log(`[Boot] Initialized data files: ${initialized.join(', ')}`)
+    } else {
+      console.log('[Boot] Data files already present')
+    }
+  } catch (err) {
+    console.error('[Boot] Failed to ensure data files:', err)
+  }
 
   // v1.7.1 启动凭证自检
   const llmKeyStatus = process.env.LLM_API_KEY ? 'configured' : 'MISSING'

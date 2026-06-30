@@ -30,6 +30,24 @@ export interface EndpointStats {
   errorRate: number
 }
 
+export interface BySkillEntry {
+  skillId: string
+  skillName: string
+  kbId: string
+  calls: number
+  avgLatency: number
+  errorRate: number
+}
+
+export interface BySkillStats {
+  total: number
+  avgLatency: number
+  errorRate: number
+  days: number
+  skills: BySkillEntry[]
+  byEndpoint: Record<string, number>
+}
+
 export interface ApiResponse<T> {
   success: boolean
   data?: T
@@ -44,4 +62,7 @@ export const statsApi = {
     api.get<ApiResponse<DailyStats[]>>('/stats/daily', { params: { days } }),
 
   getEndpoints: () => api.get<ApiResponse<EndpointStats[]>>('/stats/endpoints'),
+
+  getBySkill: (params: { skillName?: string; kbId?: string; days?: number } = {}) =>
+    api.get<ApiResponse<BySkillStats>>('/stats/by-skill', { params }),
 }
