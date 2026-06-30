@@ -89,11 +89,11 @@ chmod -R u+rwX .git 2>/dev/null || true
 log_step "规避漏洞 3/5: 清理 .git 锁"
 rm -f .git/index.lock FETCH_HEAD
 
-# ==================== 漏洞 4: 网络超时 - git pull 重试 ====================
-log_step "规避漏洞 4/5: git pull 多次重试"
+# ==================== 漏洞 4: 网络超时 - git 拉取并切到目标分支 ====================
+log_step "规避漏洞 4/5: git fetch + checkout $BRANCH + reset (5 次重试)"
 for i in 1 2 3 4 5; do
     if git fetch origin "$BRANCH" 2>&1 | tail -3; then
-        log_step "  ✓ git fetch 成功 (尝试 $i)"
+        log_step "  ✓ git fetch origin $BRANCH 成功 (尝试 $i)"
         break
     fi
     log_warn "  git fetch 失败,等待 15s 后重试 (尝试 $i/5)"
@@ -103,8 +103,28 @@ for i in 1 2 3 4 5; do
         exit 1
     fi
 done
+
+# 关键: 必须在目标分支上,否则 reset --hard 后代码可能不匹配
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "DETACHED")
+if [ "$CURRENT_BRANCH" != "$BRANCH" ]; then
+    log_warn "当前分支: $CURRENT_BRANCH (非 $BRANCH),切换中..."
+    git checkout "$BRANCH" 2>&1 | tail -3 || {
+        log_fail "git checkout $BRANCH 失败"
+        exit 1
+    }
+    log_step "  ✓ 已切换到 $BRANCH"
+fi
+
 git reset --hard "origin/$BRANCH"
-log_step "  ✓ git reset --hard origin/$BRANCH 完成"
+LOCAL_HEAD=$(git rev-parse --short HEAD)
+REMOTE_HEAD=$(git rev-parse --short "origin/$BRANCH")
+if [ "$LOCAL_HEAD" = "$REMOTE_HEAD" ]; then
+    log_step "  ✓ git reset --hard origin/$BRANCH 完成 (HEAD=$LOCAL_HEAD)"
+else
+    log_fail "本地 HEAD=$LOCAL_HEAD 与 origin/$BRANCH=$REMOTE_HEAD 不一致"
+    exit 1
+fi
+log_step "  ✓ 当前 commit: $(git log -1 --oneline)"
 
 # ==================== 验证 v1.9.0 产物 ====================
 log_step "验证 v1.9.0 部署产物"
