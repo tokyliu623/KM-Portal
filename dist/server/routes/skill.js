@@ -4,6 +4,7 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { buildSkillZip } from '../services/skillPackage';
 import { translateToEnglish, asciiFallback } from '../services/translator';
+import { getField } from '../utils/fieldCompat.js';
 const router = Router();
 const DATA_DIR = path.join(process.cwd(), 'data');
 const SKILLS_FILE = path.join(DATA_DIR, 'skills.json');
@@ -94,18 +95,23 @@ router.get('/:id', async (req, res) => {
 });
 router.post('/', async (req, res) => {
     try {
-        const { name, description, kbId, kbName, permission } = req.body;
-        if (!name || !kbId || !kbName) {
+        const { name, description, permission } = req.body;
+        // v1.7.3 兼容双字段名(kbId/kb_id, kbName/kb_name)
+        const kbId = getField(req.body, 'kbId', 'kb_id');
+        const kbName = getField(req.body, 'kbName', 'kb_name');
+        if (!name || kbId === undefined || kbName === undefined) {
             return res.status(400).json({ success: false, error: 'name, kbId and kbName are required' });
         }
         if (isNaN(Number(kbId)) || Number(kbId) <= 0) {
             return res.status(400).json({ success: false, error: 'Invalid kbId: must be a positive number' });
         }
         const validPermission = permission === 'write' ? 'write' : 'read';
+        const kbIdNum = Number(kbId);
+        const kbNameStr = String(kbName);
         let nameEn;
         let translationWarning;
         try {
-            nameEn = await translateToEnglish(name, String(kbId));
+            nameEn = await translateToEnglish(name, String(kbIdNum));
         }
         catch (err) {
             console.error('[Translate Error]:', err);
@@ -116,11 +122,11 @@ router.post('/', async (req, res) => {
             id: uuidv4(),
             name: nameEn,
             nameOriginal: name,
-            description: description || `Skill for ${kbName || 'knowledge base'}`,
-            kbId: Number(kbId),
-            kbName: kbName || `KB-${kbId}`,
+            description: description || `Skill for ${kbNameStr}`,
+            kbId: kbIdNum,
+            kbName: kbNameStr,
             permission: validPermission,
-            content: generateSkillContent(nameEn, Number(kbId), kbName || `KB-${kbId}`, validPermission),
+            content: generateSkillContent(nameEn, kbIdNum, kbNameStr, validPermission),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };

@@ -8,6 +8,7 @@ import {
   EditOutlined,
   ThunderboltOutlined,
   ApiOutlined,
+  RocketOutlined,
 } from '@ant-design/icons'
 
 const { Sider, Content } = AntLayout
@@ -19,6 +20,7 @@ const menuItems = [
   { key: '/editor', icon: <EditOutlined />, label: '文档编辑器' },
   { key: '/skill-gen', icon: <ThunderboltOutlined />, label: 'Skill 生成' },
   { key: '/api-docs', icon: <ApiOutlined />, label: 'API 文档' },
+  { key: '/wizard', icon: <RocketOutlined />, label: '向导' },
 ]
 
 export function Layout() {

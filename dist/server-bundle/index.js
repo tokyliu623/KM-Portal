@@ -18856,17 +18856,17 @@ var require_router = __commonJS({
     var toString = Object.prototype.toString;
     var proto = module2.exports = function(options) {
       var opts = options || {};
-      function router6(req, res, next) {
-        router6.handle(req, res, next);
+      function router7(req, res, next) {
+        router7.handle(req, res, next);
       }
-      setPrototypeOf(router6, proto);
-      router6.params = {};
-      router6._params = [];
-      router6.caseSensitive = opts.caseSensitive;
-      router6.mergeParams = opts.mergeParams;
-      router6.strict = opts.strict;
-      router6.stack = [];
-      return router6;
+      setPrototypeOf(router7, proto);
+      router7.params = {};
+      router7._params = [];
+      router7.caseSensitive = opts.caseSensitive;
+      router7.mergeParams = opts.mergeParams;
+      router7.strict = opts.strict;
+      router7.stack = [];
+      return router7;
     };
     proto.param = function param(name, fn) {
       if (typeof name === "function") {
@@ -21883,7 +21883,7 @@ var require_application = __commonJS({
   "node_modules/express/lib/application.js"(exports2, module2) {
     "use strict";
     var finalhandler = require_finalhandler();
-    var Router6 = require_router();
+    var Router7 = require_router();
     var methods = require_methods();
     var middleware = require_init();
     var query = require_query();
@@ -21948,7 +21948,7 @@ var require_application = __commonJS({
     };
     app2.lazyrouter = function lazyrouter() {
       if (!this._router) {
-        this._router = new Router6({
+        this._router = new Router7({
           caseSensitive: this.enabled("case sensitive routing"),
           strict: this.enabled("strict routing")
         });
@@ -21957,17 +21957,17 @@ var require_application = __commonJS({
       }
     };
     app2.handle = function handle(req, res, callback) {
-      var router6 = this._router;
+      var router7 = this._router;
       var done = callback || finalhandler(req, res, {
         env: this.get("env"),
         onerror: logerror.bind(this)
       });
-      if (!router6) {
+      if (!router7) {
         debug("no routes defined on app");
         done();
         return;
       }
-      router6.handle(req, res, done);
+      router7.handle(req, res, done);
     };
     app2.use = function use(fn) {
       var offset = 0;
@@ -21987,15 +21987,15 @@ var require_application = __commonJS({
         throw new TypeError("app.use() requires a middleware function");
       }
       this.lazyrouter();
-      var router6 = this._router;
+      var router7 = this._router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router6.use(path6, fn2);
+          return router7.use(path6, fn2);
         }
         debug(".use app under %s", path6);
         fn2.mountpath = path6;
         fn2.parent = this;
-        router6.use(path6, function mounted_app(req, res, next) {
+        router7.use(path6, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             setPrototypeOf(req, orig.request);
@@ -23812,7 +23812,7 @@ var require_express = __commonJS({
     var mixin = require_merge_descriptors();
     var proto = require_application();
     var Route = require_route();
-    var Router6 = require_router();
+    var Router7 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -23835,7 +23835,7 @@ var require_express = __commonJS({
     exports2.request = req;
     exports2.response = res;
     exports2.Route = Route;
-    exports2.Router = Router6;
+    exports2.Router = Router7;
     exports2.json = bodyParser.json;
     exports2.query = require_query();
     exports2.raw = bodyParser.raw;
@@ -66888,7 +66888,7 @@ var require_archiver = __commonJS({
 });
 
 // src/server/index.ts
-var import_express6 = __toESM(require_express2(), 1);
+var import_express7 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 var import_path5 = __toESM(require("path"), 1);
 
@@ -68328,6 +68328,708 @@ router5.get("/translate-health", async (_req, res) => {
 });
 var diag_default = router5;
 
+// src/server/routes/wizard.ts
+var import_express6 = __toESM(require_express2(), 1);
+
+// src/server/services/kbTreeVisualizer.ts
+function visualizeTree(tree) {
+  const nodes = [];
+  const edges = [];
+  let maxDepth = 0;
+  function processNode(node, depth = 0) {
+    maxDepth = Math.max(maxDepth, depth);
+    nodes.push(node);
+    if (node.children) {
+      for (const child of node.children) {
+        edges.push({ from: node.id, to: child.id });
+        processNode(child, depth + 1);
+      }
+    }
+  }
+  for (const root of tree) {
+    processNode(root);
+  }
+  const leafNodes = nodes.filter((n) => !n.hasChild).length;
+  return {
+    nodes,
+    edges,
+    stats: {
+      totalNodes: nodes.length,
+      totalDocs: nodes.length,
+      maxDepth,
+      leafNodes
+    }
+  };
+}
+function exportAsMarkdown(tree, kbName) {
+  const lines = [];
+  lines.push(`# ${kbName} - \u76EE\u5F55\u7ED3\u6784`);
+  lines.push("");
+  lines.push("> Generated by KM-Portal Wizard");
+  lines.push("");
+  lines.push("## \u76EE\u5F55\u5927\u7EB2");
+  lines.push("");
+  function renderNode(node, prefix = "", isLast = true) {
+    const connector = isLast ? "\u2514\u2500\u2500 " : "\u251C\u2500\u2500 ";
+    const childPrefix = prefix + (isLast ? "    " : "\u2502   ");
+    lines.push(`${prefix}${connector}${node.title}`);
+    if (node.children && node.children.length > 0) {
+      const children = node.children;
+      for (let i = 0; i < children.length; i++) {
+        renderNode(children[i], childPrefix, i === children.length - 1);
+      }
+    }
+  }
+  for (let i = 0; i < tree.length; i++) {
+    renderNode(tree[i], "", i === tree.length - 1);
+  }
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+  lines.push(`*\u5171 ${getDocCount(tree)} \u4E2A\u6587\u6863*`);
+  return lines.join("\n");
+}
+function getDocCount(tree) {
+  let count = 0;
+  function countNodes(nodes) {
+    for (const node of nodes) {
+      count++;
+      if (node.children) {
+        countNodes(node.children);
+      }
+    }
+  }
+  countNodes(tree);
+  return count;
+}
+function buildTreeFromFlat(flatNodes) {
+  const nodeMap = /* @__PURE__ */ new Map();
+  const roots = [];
+  for (const item of flatNodes) {
+    const node = {
+      ...item,
+      children: []
+    };
+    nodeMap.set(item.id, node);
+  }
+  for (const node of nodeMap.values()) {
+    if (node.parentId === null || !nodeMap.has(node.parentId)) {
+      roots.push(node);
+    } else {
+      const parent = nodeMap.get(node.parentId);
+      if (parent) {
+        parent.children = parent.children || [];
+        parent.children.push(node);
+      }
+    }
+  }
+  return roots;
+}
+
+// src/server/routes/wizard.ts
+var router6 = (0, import_express6.Router)();
+var jobs = /* @__PURE__ */ new Map();
+setInterval(() => {
+  const now = Date.now();
+  const expireTime = 30 * 60 * 1e3;
+  for (const [jobId, job] of jobs.entries()) {
+    if (now - new Date(job.createdAt).getTime() > expireTime) {
+      jobs.delete(jobId);
+    }
+  }
+}, 5 * 60 * 1e3);
+router6.post("/init", async (req, res, next) => {
+  try {
+    const kbId = getField(req.body, "kbId", "kb_id");
+    const token = getField(req.body, "token", "accessToken");
+    const kbName = getField(req.body, "kbName", "kb_name");
+    if (!kbId) {
+      const response = { valid: false, error: "kbId is required" };
+      res.status(400).json(response);
+      return;
+    }
+    if (!token) {
+      const response = { valid: false, error: "token is required" };
+      res.status(400).json(response);
+      return;
+    }
+    if (!kbName) {
+      const response = { valid: false, error: "kbName is required" };
+      res.status(400).json(response);
+      return;
+    }
+    const kbIdNum = Number(kbId);
+    if (isNaN(kbIdNum) || kbIdNum <= 0) {
+      const response = { valid: false, error: "Invalid kbId: must be a positive number" };
+      res.status(400).json(response);
+      return;
+    }
+    const tokenStr = String(token);
+    const kbNameStr = String(kbName);
+    const kmApiClient2 = req.app.locals.kmApiClient;
+    try {
+      const kbInfo = await kmApiClient2.getKBInfo(String(kbIdNum), tokenStr);
+      const response = {
+        valid: true,
+        kbInfo: {
+          kbId: kbInfo.kbId || kbIdNum,
+          kbName: kbInfo.kbName || kbNameStr,
+          permission: kbInfo.effectivePermType || "read_only"
+        }
+      };
+      res.json(response);
+    } catch (error) {
+      if (error instanceof KMApiError) {
+        const response = { valid: false, error: error.message };
+        res.status(error.status).json(response);
+      } else {
+        throw error;
+      }
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+router6.post("/diagnose", async (req, res, next) => {
+  try {
+    const kbId = getField(req.body, "kbId", "kb_id");
+    const token = getField(req.body, "token", "accessToken");
+    if (!kbId) {
+      res.status(400).json({ success: false, error: "kbId is required" });
+      return;
+    }
+    if (!token) {
+      res.status(400).json({ success: false, error: "token is required" });
+      return;
+    }
+    const kbIdNum = Number(kbId);
+    const tokenStr = String(token);
+    const kmApiClient2 = req.app.locals.kmApiClient;
+    try {
+      const treeData = await kmApiClient2.getKBTree(String(kbIdNum), tokenStr);
+      const flatNodes = treeData.items || [];
+      const tree = buildTreeFromFlat(flatNodes);
+      const docCount = getDocCount(tree);
+      const visualization = visualizeTree(tree);
+      const summary = `\u77E5\u8BC6\u5E93\u5305\u542B ${docCount} \u4E2A\u6587\u6863\uFF0C\u6700\u5927\u5C42\u7EA7\u6DF1\u5EA6 ${visualization.stats.maxDepth} \u5C42`;
+      const response = {
+        tree: flatNodes,
+        docCount,
+        summary
+      };
+      res.json({ success: true, data: response });
+    } catch (error) {
+      if (error instanceof KMApiError) {
+        res.status(error.status).json({ success: false, error: error.message });
+      } else {
+        throw error;
+      }
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+router6.post("/generate", async (req, res, next) => {
+  try {
+    const kbId = getField(req.body, "kbId", "kb_id");
+    const token = getField(req.body, "token", "accessToken");
+    const kbName = getField(req.body, "kbName", "kb_name");
+    if (!kbId) {
+      res.status(400).json({ success: false, error: "kbId is required" });
+      return;
+    }
+    if (!token) {
+      res.status(400).json({ success: false, error: "token is required" });
+      return;
+    }
+    if (!kbName) {
+      res.status(400).json({ success: false, error: "kbName is required" });
+      return;
+    }
+    const kbIdNum = Number(kbId);
+    const tokenStr = String(token);
+    const kbNameStr = String(kbName);
+    const jobId = v4_default();
+    const job = {
+      jobId,
+      kbId: kbIdNum,
+      kbName: kbNameStr,
+      status: "pending",
+      progress: 0,
+      products: [
+        { type: "skill", name: "Skill \u5B89\u88C5\u5305", status: "pending" },
+        { type: "mcp", name: "MCP \u914D\u7F6E", status: "pending" },
+        { type: "ai_template", name: "AI \u6307\u4EE4\u6A21\u677F", status: "pending" },
+        { type: "openapi", name: "OpenAPI \u89C4\u8303", status: "pending" },
+        { type: "tree", name: "\u76EE\u5F55\u7ED3\u6784", status: "pending" }
+      ],
+      createdAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    jobs.set(jobId, job);
+    const kmApiClient2 = req.app.locals.kmApiClient;
+    const generateJob = async () => {
+      job.status = "running";
+      try {
+        const treeData = await kmApiClient2.getKBTree(String(kbIdNum), tokenStr);
+        const flatNodes = treeData.items || [];
+        const tree = buildTreeFromFlat(flatNodes);
+        job.progress = 20;
+        const skillIndex = job.products.findIndex((p) => p.type === "skill");
+        try {
+          const skillZip = await buildSkillZip({
+            skillId: jobId,
+            skillName: kbNameStr,
+            description: `Knowledge Base Skill for ${kbNameStr}`,
+            triggerWords: [],
+            kbId: kbIdNum,
+            kbName: kbNameStr,
+            content: `# ${kbNameStr}
+
+Knowledge Base Skill for ${kbNameStr}`
+          });
+          job.products[skillIndex] = {
+            type: "skill",
+            name: "Skill \u5B89\u88C5\u5305",
+            status: "done",
+            data: skillZip.toString("base64")
+          };
+        } catch (err) {
+          job.products[skillIndex] = {
+            type: "skill",
+            name: "Skill \u5B89\u88C5\u5305",
+            status: "error",
+            error: err instanceof Error ? err.message : "Unknown error"
+          };
+        }
+        job.progress = 40;
+        const mcpIndex = job.products.findIndex((p) => p.type === "mcp");
+        try {
+          const mcpConfig = {
+            mcpServers: {
+              "vivo-knowledge": {
+                url: "https://wiki.vivo.xyz/api/knowledge/mcp/rpc",
+                headers: {
+                  Authorization: `Bearer ${tokenStr}`,
+                  "MCP-Protocol-Version": "2025-03-26"
+                },
+                transport: "streamable-http"
+              }
+            }
+          };
+          job.products[mcpIndex] = {
+            type: "mcp",
+            name: "MCP \u914D\u7F6E",
+            status: "done",
+            data: JSON.stringify(mcpConfig, null, 2)
+          };
+        } catch (err) {
+          job.products[mcpIndex] = {
+            type: "mcp",
+            name: "MCP \u914D\u7F6E",
+            status: "error",
+            error: err instanceof Error ? err.message : "Unknown error"
+          };
+        }
+        job.progress = 60;
+        const aiTemplateIndex = job.products.findIndex((p) => p.type === "ai_template");
+        try {
+          const templates = generateAiTemplates(kbNameStr, kbIdNum);
+          job.products[aiTemplateIndex] = {
+            type: "ai_template",
+            name: "AI \u6307\u4EE4\u6A21\u677F",
+            status: "done",
+            data: templates
+          };
+        } catch (err) {
+          job.products[aiTemplateIndex] = {
+            type: "ai_template",
+            name: "AI \u6307\u4EE4\u6A21\u677F",
+            status: "error",
+            error: err instanceof Error ? err.message : "Unknown error"
+          };
+        }
+        job.progress = 80;
+        const openapiIndex = job.products.findIndex((p) => p.type === "openapi");
+        try {
+          const openapiSpec = generateOpenApiSpec(kbNameStr, kbIdNum);
+          job.products[openapiIndex] = {
+            type: "openapi",
+            name: "OpenAPI \u89C4\u8303",
+            status: "done",
+            data: openapiSpec
+          };
+        } catch (err) {
+          job.products[openapiIndex] = {
+            type: "openapi",
+            name: "OpenAPI \u89C4\u8303",
+            status: "error",
+            error: err instanceof Error ? err.message : "Unknown error"
+          };
+        }
+        const treeIndex = job.products.findIndex((p) => p.type === "tree");
+        try {
+          const markdown = exportAsMarkdown(tree, kbNameStr);
+          const visualization = visualizeTree(tree);
+          job.products[treeIndex] = {
+            type: "tree",
+            name: "\u76EE\u5F55\u7ED3\u6784",
+            status: "done",
+            data: JSON.stringify({ markdown, visualization }, null, 2)
+          };
+        } catch (err) {
+          job.products[treeIndex] = {
+            type: "tree",
+            name: "\u76EE\u5F55\u7ED3\u6784",
+            status: "error",
+            error: err instanceof Error ? err.message : "Unknown error"
+          };
+        }
+        job.progress = 100;
+        job.status = "done";
+      } catch (err) {
+        job.status = "error";
+        job.error = err instanceof Error ? err.message : "Unknown error";
+      }
+    };
+    generateJob();
+    const response = { jobId, status: "pending" };
+    res.json({ success: true, data: response });
+  } catch (error) {
+    next(error);
+  }
+});
+router6.get("/status/:jobId", (req, res) => {
+  const { jobId } = req.params;
+  const job = jobs.get(jobId);
+  if (!job) {
+    res.status(404).json({ success: false, error: "Job not found or expired" });
+    return;
+  }
+  const response = {
+    jobId: job.jobId,
+    status: job.status,
+    progress: job.progress,
+    products: job.products,
+    error: job.error
+  };
+  res.json({ success: true, data: response });
+});
+function generateAiTemplates(kbName, kbId) {
+  const templates = [
+    {
+      name: "\u6587\u6863\u5199\u4F5C\u52A9\u624B",
+      category: "writing",
+      content: `\u4F60\u662F\u4E00\u4E2A\u4E13\u4E1A\u7684\u6587\u6863\u5199\u4F5C\u52A9\u624B\uFF0C\u64C5\u957F\u5E2E\u52A9\u7528\u6237\u64B0\u5199\u9AD8\u8D28\u91CF\u7684\u6587\u6863\u3002
+
+\u8BF7\u6839\u636E\u7528\u6237\u63D0\u4F9B\u7684\u5173\u952E\u8BCD\u6216\u4E3B\u9898\uFF0C\u53C2\u8003\u77E5\u8BC6\u5E93\u300C${kbName}\u300D(ID: ${kbId}) \u4E2D\u7684\u76F8\u5173\u5185\u5BB9\uFF0C\u751F\u6210\u7ED3\u6784\u6E05\u6670\u3001\u5185\u5BB9\u51C6\u786E\u7684\u6587\u6863\u3002
+
+\u8BF7\u9075\u5FAA\u4EE5\u4E0B\u683C\u5F0F\uFF1A
+1. \u6807\u9898
+2. \u6982\u8FF0
+3. \u8BE6\u7EC6\u5185\u5BB9
+4. \u603B\u7ED3
+
+\u5F00\u59CB\u5199\u4F5C\u524D\uFF0C\u8BF7\u5148\u68C0\u7D22\u77E5\u8BC6\u5E93\u4E2D\u7684\u76F8\u5173\u6587\u6863\u4F5C\u4E3A\u53C2\u8003\u3002`
+    },
+    {
+      name: "\u6587\u6863\u9605\u8BFB\u52A9\u624B",
+      category: "reading",
+      content: `\u4F60\u662F\u4E00\u4E2A\u4E13\u4E1A\u7684\u6587\u6863\u9605\u8BFB\u52A9\u624B\uFF0C\u64C5\u957F\u5E2E\u52A9\u7528\u6237\u7406\u89E3\u548C\u603B\u7ED3\u6587\u6863\u5185\u5BB9\u3002
+
+\u8BF7\u6839\u636E\u7528\u6237\u63D0\u4F9B\u7684\u6587\u6863\u6216\u4E3B\u9898\uFF0C\u4ECE\u77E5\u8BC6\u5E93\u300C${kbName}\u300D(ID: ${kbId}) \u4E2D\u68C0\u7D22\u76F8\u5173\u5185\u5BB9\uFF0C\u5E76\u63D0\u4F9B\uFF1A
+1. \u6587\u6863\u6458\u8981
+2. \u5173\u952E\u8981\u70B9
+3. \u76F8\u5173\u80CC\u666F\u77E5\u8BC6
+4. \u8FDB\u4E00\u6B65\u9605\u8BFB\u5EFA\u8BAE`
+    },
+    {
+      name: "\u77E5\u8BC6\u68C0\u7D22\u52A9\u624B",
+      category: "search",
+      content: `\u4F60\u662F\u4E00\u4E2A\u4E13\u4E1A\u7684\u77E5\u8BC6\u68C0\u7D22\u52A9\u624B\uFF0C\u64C5\u957F\u4ECE\u77E5\u8BC6\u5E93\u4E2D\u7CBE\u51C6\u68C0\u7D22\u7528\u6237\u9700\u8981\u7684\u4FE1\u606F\u3002
+
+\u8BF7\u6839\u636E\u7528\u6237\u7684\u67E5\u8BE2\uFF0C\u4ECE\u77E5\u8BC6\u5E93\u300C${kbName}\u300D(ID: ${kbId}) \u4E2D\u68C0\u7D22\u76F8\u5173\u5185\u5BB9\uFF0C\u5E76\u63D0\u4F9B\uFF1A
+1. \u76F8\u5173\u6587\u6863\u5217\u8868
+2. \u6BCF\u4E2A\u6587\u6863\u7684\u76F8\u5173\u5EA6\u8BC4\u5206
+3. \u5173\u952E\u5185\u5BB9\u6458\u8981
+4. \u6587\u6863\u94FE\u63A5`
+    },
+    {
+      name: "\u7ED3\u6784\u5316\u6307\u4EE4\u6A21\u677F",
+      category: "template",
+      content: `\u8BF7\u4F7F\u7528\u4EE5\u4E0B\u7ED3\u6784\u5316\u6307\u4EE4\u6A21\u677F\u751F\u6210\u56DE\u7B54\uFF1A
+
+\u3010\u80CC\u666F\u3011
+{\u63CF\u8FF0\u4EFB\u52A1\u80CC\u666F}
+
+\u3010\u76EE\u6807\u3011
+{\u660E\u786E\u56DE\u7B54\u76EE\u6807}
+
+\u3010\u7EA6\u675F\u6761\u4EF6\u3011
+{\u5217\u51FA\u9650\u5236\u6761\u4EF6}
+
+\u3010\u8F93\u51FA\u683C\u5F0F\u3011
+{\u6307\u5B9A\u8F93\u51FA\u683C\u5F0F}
+
+\u3010\u53C2\u8003\u77E5\u8BC6\u3011
+\u8BF7\u4ECE\u77E5\u8BC6\u5E93\u300C${kbName}\u300D(ID: ${kbId}) \u4E2D\u68C0\u7D22\u76F8\u5173\u5185\u5BB9\u4F5C\u4E3A\u53C2\u8003\u3002`
+    },
+    {
+      name: "\u77E5\u8BC6\u5E93\u95EE\u7B54",
+      category: "qa",
+      content: `\u4F60\u662F\u4E00\u4E2A\u4E13\u4E1A\u7684\u77E5\u8BC6\u5E93\u95EE\u7B54\u52A9\u624B\uFF0C\u57FA\u4E8E\u77E5\u8BC6\u5E93\u300C${kbName}\u300D(ID: ${kbId}) \u56DE\u7B54\u7528\u6237\u95EE\u9898\u3002
+
+\u8BF7\u9075\u5FAA\u4EE5\u4E0B\u6D41\u7A0B\uFF1A
+1. \u7406\u89E3\u7528\u6237\u95EE\u9898
+2. \u68C0\u7D22\u77E5\u8BC6\u5E93\u76F8\u5173\u5185\u5BB9
+3. \u7EFC\u5408\u5206\u6790\u540E\u7ED9\u51FA\u51C6\u786E\u56DE\u7B54
+4. \u6CE8\u660E\u4FE1\u606F\u6765\u6E90
+
+\u5982\u679C\u77E5\u8BC6\u5E93\u4E2D\u6CA1\u6709\u76F8\u5173\u4FE1\u606F\uFF0C\u8BF7\u660E\u786E\u544A\u77E5\u7528\u6237\u3002`
+    }
+  ];
+  return JSON.stringify(templates, null, 2);
+}
+function generateOpenApiSpec(kbName, kbId) {
+  const spec = {
+    openapi: "3.0.3",
+    info: {
+      title: `${kbName} - Knowledge Base API`,
+      description: `OpenAPI specification for knowledge base "${kbName}" (ID: ${kbId})`,
+      version: "1.0.0"
+    },
+    servers: [
+      {
+        url: "https://wiki.vivo.xyz",
+        description: "Production"
+      }
+    ],
+    paths: {
+      "/api/knowledge/v1/openapi/kb/{kbId}/info": {
+        get: {
+          operationId: "getKBInfo",
+          summary: "\u83B7\u53D6\u77E5\u8BC6\u5E93\u4FE1\u606F",
+          tags: ["Knowledge Base"],
+          parameters: [
+            {
+              name: "kbId",
+              in: "path",
+              required: true,
+              schema: { type: "integer" },
+              description: "\u77E5\u8BC6\u5E93 ID"
+            }
+          ],
+          responses: {
+            "200": {
+              description: "\u6210\u529F",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      kbId: { type: "integer" },
+                      kbName: { type: "string" },
+                      effectivePermType: { type: "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/knowledge/v1/openapi/kb/{kbId}/tree": {
+        get: {
+          operationId: "getKBTree",
+          summary: "\u83B7\u53D6\u77E5\u8BC6\u5E93\u76EE\u5F55\u6811",
+          tags: ["Knowledge Base"],
+          parameters: [
+            {
+              name: "kbId",
+              in: "path",
+              required: true,
+              schema: { type: "integer" },
+              description: "\u77E5\u8BC6\u5E93 ID"
+            }
+          ],
+          responses: {
+            "200": {
+              description: "\u6210\u529F",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      items: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            id: { type: "integer" },
+                            title: { type: "string" },
+                            parentId: { type: "integer", nullable: true },
+                            hasChild: { type: "boolean" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/knowledge/v1/openapi/kb/{kbId}/document/{docId}": {
+        get: {
+          operationId: "getKBDocument",
+          summary: "\u83B7\u53D6\u6587\u6863\u5185\u5BB9",
+          tags: ["Knowledge Base"],
+          parameters: [
+            {
+              name: "kbId",
+              in: "path",
+              required: true,
+              schema: { type: "integer" }
+            },
+            {
+              name: "docId",
+              in: "path",
+              required: true,
+              schema: { type: "integer" }
+            }
+          ],
+          responses: {
+            "200": {
+              description: "\u6210\u529F",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      contentId: { type: "integer" },
+                      title: { type: "string" },
+                      content: { type: "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/knowledge/v1/openapi/kb/{kbId}/contents/create": {
+        post: {
+          operationId: "createContent",
+          summary: "\u521B\u5EFA\u6587\u6863",
+          tags: ["Knowledge Base"],
+          parameters: [
+            {
+              name: "kbId",
+              in: "path",
+              required: true,
+              schema: { type: "integer" }
+            }
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["title", "content"],
+                  properties: {
+                    title: { type: "string" },
+                    content: { type: "string" },
+                    contentType: { type: "string", default: "markdown" },
+                    parentId: { type: "integer" }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            "200": {
+              description: "\u6210\u529F",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      contentId: { type: "integer" },
+                      link: { type: "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/knowledge/v1/openapi/kb/{kbId}/contents/update": {
+        post: {
+          operationId: "updateContent",
+          summary: "\u66F4\u65B0\u6587\u6863",
+          tags: ["Knowledge Base"],
+          parameters: [
+            {
+              name: "kbId",
+              in: "path",
+              required: true,
+              schema: { type: "integer" }
+            }
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["contentId", "content"],
+                  properties: {
+                    contentId: { type: "integer" },
+                    title: { type: "string" },
+                    content: { type: "string" },
+                    contentType: { type: "string", default: "markdown" }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            "200": {
+              description: "\u6210\u529F",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      contentId: { type: "integer" },
+                      link: { type: "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+          description: `accessToken for KB ${kbId}`
+        }
+      }
+    },
+    security: [{ bearerAuth: [] }]
+  };
+  return JSON.stringify(spec, null, 2);
+}
+var wizard_default = router6;
+
 // src/server/middleware/errorHandler.ts
 function errorHandler(err, _req, res, _next) {
   console.error("Error:", err.message);
@@ -68426,7 +69128,7 @@ function requestLogger(req, res, next) {
 var __dirname = import_path5.default.resolve();
 var STATIC_DIR = import_path5.default.join(__dirname, "dist/client");
 var INDEX_FILE = import_path5.default.join(__dirname, "dist/client/index.html");
-var app = (0, import_express6.default)();
+var app = (0, import_express7.default)();
 var PORT = process.env.PORT || 5053;
 var kmApiClient = new KMApiClient({
   baseUrl: process.env.WIKI_BASE_URL || "https://wiki.vivo.xyz",
@@ -68434,7 +69136,7 @@ var kmApiClient = new KMApiClient({
 });
 app.locals.kmApiClient = kmApiClient;
 app.use((0, import_cors.default)());
-app.use(import_express6.default.json());
+app.use(import_express7.default.json());
 app.use(requestLogger);
 app.get("/api/health", (req, res) => {
   res.json({
@@ -68449,7 +69151,8 @@ app.use("/api/skill", skill_default);
 app.use("/api/kb", kb_default);
 app.use("/api/stats", stats_default);
 app.use("/api/diag", diag_default);
-app.use(import_express6.default.static(STATIC_DIR));
+app.use("/api/wizard", wizard_default);
+app.use(import_express7.default.static(STATIC_DIR));
 app.get("*", (req, res) => {
   res.sendFile(INDEX_FILE);
 });

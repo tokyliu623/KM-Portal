@@ -6,6 +6,7 @@ import kbRouter from './routes/kb.js'
 import statsRouter from './routes/stats.js'
 import skillRouter from './routes/skill.js'
 import diagRouter from './routes/diag.js'
+import wizardRouter from './routes/wizard.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { requestLogger } from './middleware/logger.js'
 import { KMApiClient } from './services/kmApiClient.js'
@@ -41,6 +42,7 @@ app.use('/api/skill', skillRouter)
 app.use('/api/kb', kbRouter)
 app.use('/api/stats', statsRouter)
 app.use('/api/diag', diagRouter)
+app.use('/api/wizard', wizardRouter)
 
 app.use(express.static(STATIC_DIR))
 

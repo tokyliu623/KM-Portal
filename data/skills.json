@@ -1,3 +1,40 @@
 {
-  "skills": []
+  "skills": [
+    {
+      "id": "bad080b6-76b7-4793-a641-027a0c152d77",
+      "name": "测试 Skill v1.7.3",
+      "nameOriginal": "测试 Skill v1.7.3",
+      "description": "field compat test",
+      "kbId": 34754,
+      "kbName": "Test KB",
+      "permission": "read",
+      "content": "# 测试 Skill v1.7.3\n\n## Skill Information\n\n- **Knowledge Base ID**: 34754\n- **Knowledge Base Name**: Test KB\n- **Permission Level**: READ\n- **Generated**: 2026-06-30T05:47:04.949Z\n\n## Description\n\n测试 Skill v1.7.3 is a specialized assistant skill for interacting with the Test KB knowledge base.\n\n## Capabilities\n\n- **Capabilities**: Read-only access to knowledge base\n- Query documents and information\n- Search across knowledge base content\n\n\n## Usage\n\nThis skill can be used by AI assistants to:\n1. Answer questions based on knowledge base content\n2. Retrieve relevant documents and information\n3. Provide read-only access to information\n\n## Notes\n\n- Ensure the knowledge base token is valid before use\n- This skill provides read-only access\n",
+      "createdAt": "2026-06-30T05:47:04.949Z",
+      "updatedAt": "2026-06-30T05:47:04.949Z"
+    },
+    {
+      "id": "3d346394-06c8-459c-aeb5-5483d9db0df7",
+      "name": "测试 Skill v1.7.3 snake",
+      "nameOriginal": "测试 Skill v1.7.3 snake",
+      "description": "field compat test snake",
+      "kbId": 34754,
+      "kbName": "Test KB Snake",
+      "permission": "read",
+      "content": "# 测试 Skill v1.7.3 snake\n\n## Skill Information\n\n- **Knowledge Base ID**: 34754\n- **Knowledge Base Name**: Test KB Snake\n- **Permission Level**: READ\n- **Generated**: 2026-06-30T05:47:04.973Z\n\n## Description\n\n测试 Skill v1.7.3 snake is a specialized assistant skill for interacting with the Test KB Snake knowledge base.\n\n## Capabilities\n\n- **Capabilities**: Read-only access to knowledge base\n- Query documents and information\n- Search across knowledge base content\n\n\n## Usage\n\nThis skill can be used by AI assistants to:\n1. Answer questions based on knowledge base content\n2. Retrieve relevant documents and information\n3. Provide read-only access to information\n\n## Notes\n\n- Ensure the knowledge base token is valid before use\n- This skill provides read-only access\n",
+      "createdAt": "2026-06-30T05:47:04.973Z",
+      "updatedAt": "2026-06-30T05:47:04.973Z"
+    },
+    {
+      "id": "6c9b0ca4-36b9-46f2-9263-e720c61ab913",
+      "name": "priority test",
+      "nameOriginal": "priority test",
+      "description": "Skill for Camel Wins",
+      "kbId": 34754,
+      "kbName": "Camel Wins",
+      "permission": "read",
+      "content": "# priority test\n\n## Skill Information\n\n- **Knowledge Base ID**: 34754\n- **Knowledge Base Name**: Camel Wins\n- **Permission Level**: READ\n- **Generated**: 2026-06-30T05:47:04.996Z\n\n## Description\n\npriority test is a specialized assistant skill for interacting with the Camel Wins knowledge base.\n\n## Capabilities\n\n- **Capabilities**: Read-only access to knowledge base\n- Query documents and information\n- Search across knowledge base content\n\n\n## Usage\n\nThis skill can be used by AI assistants to:\n1. Answer questions based on knowledge base content\n2. Retrieve relevant documents and information\n3. Provide read-only access to information\n\n## Notes\n\n- Ensure the knowledge base token is valid before use\n- This skill provides read-only access\n",
+      "createdAt": "2026-06-30T05:47:04.996Z",
+      "updatedAt": "2026-06-30T05:47:04.996Z"
+    }
+  ]
 }

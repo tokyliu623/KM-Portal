@@ -1,12 +1,15 @@
-import { Card, Row, Col, Statistic, message } from 'antd'
+import { Card, Row, Col, Statistic, message, Button } from 'antd'
 import { PageHeader } from '../../components/PageHeader'
 import { Loading } from '../../components/Loading'
 import { useStatsStore } from '../../stores/useStatsStore'
 import { useEffect } from 'react'
 import { statsApi } from '../../services/stats'
+import { useNavigate } from 'react-router-dom'
+import { RocketOutlined } from '@ant-design/icons'
 
 export function Dashboard() {
   const { last7Days, last30Days, loading, setStats, setLoading } = useStatsStore()
+  const navigate = useNavigate()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,7 +46,15 @@ export function Dashboard() {
 
   return (
     <div>
-      <PageHeader title="仪表盘" subTitle="知识库运营概览" />
+      <PageHeader
+        title="仪表盘"
+        subTitle="知识库运营概览"
+        extra={
+          <Button type="primary" icon={<RocketOutlined />} onClick={() => navigate('/wizard')}>
+            快速开始向导
+          </Button>
+        }
+      />
       <Row gutter={16}>
         <Col span={6}>
           <Card>

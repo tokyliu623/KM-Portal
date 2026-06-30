@@ -1,15 +1,8 @@
 import { Router } from 'express';
 import { tokenStore } from '../services/tokenStore.js';
 import { KMApiError } from '../services/kmApiClient.js';
+import { getField } from '../utils/fieldCompat.js';
 const router = Router();
-// v1.7.1 兼容双字段名（kbId/kb_id, parentId/parent_id, docId/doc_id, contentId/content_id, contentType/content_type）
-function getField(body, ...keys) {
-    for (const key of keys) {
-        if (body[key] !== undefined && body[key] !== null)
-            return body[key];
-    }
-    return undefined;
-}
 async function verifyToken(req, res, requiredPermission = 'read') {
     const paramKbId = req.params.kbId;
     const bodyKbId = getField(req.body, 'kbId', 'kb_id');

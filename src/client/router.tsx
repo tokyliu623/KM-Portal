@@ -6,6 +6,7 @@ import { KBBrowser } from './pages/KBBrowser'
 import { DocEditor } from './pages/DocEditor'
 import { SkillGen } from './pages/SkillGen'
 import { ApiDocs } from './pages/ApiDocs'
+import { WizardPage } from './pages/Wizard'
 
 export function AppRouter() {
   return (
@@ -18,6 +19,7 @@ export function AppRouter() {
         <Route path="editor" element={<DocEditor />} />
         <Route path="skill-gen" element={<SkillGen />} />
         <Route path="api-docs" element={<ApiDocs />} />
+        <Route path="wizard" element={<WizardPage />} />
       </Route>
     </Routes>
   )
