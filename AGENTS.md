@@ -1,7 +1,7 @@
 # KM-Portal AGENTS.md
 
 > 本文件是 KM-Portal 项目的 Agent 工作规范。
-> 最后更新: 2026-06-30
+> 最后更新: 2026-06-30 (v1.7.2 验证脚本)
 
 ## 项目概述
 
@@ -469,3 +469,33 @@ build: 构建相关（如 pkg 打包）
 - **v1.6.0 解决**（`67efdb6`）：新增后端代理路由 `/api/kb/{tree,info,content,...}`
 - **v1.7.1 强化**：字段兼容双字段名 + 共享类型
 - **预防**：KB API 任何修改必须经过 `kbRouteFieldCompat.test.ts`
+
+## 验证脚本（v1.7.2 起新增）
+
+### `scripts/verify-skill-e2e.sh`
+- **用途**：服务器上一键完成 Skill 包**生成 → 解析 → 复核 → 清理**端到端验证
+- **覆盖验收点**（8 项）：
+  1. 服务健康 + 翻译探针
+  2. POST `/api/skill` 创建（触发翻译，验证 warning 字段）
+  3. GET `/api/skill/:id/export` 下载 zip
+  4. unzip 列出文件清单
+  5. SKILL.md frontmatter 合法性（YAML 起始/闭合、trigger 列表、description 引号、Python 解析）
+  6. zip 结构（无空 `__init__.py`、目录派生统一、所有必需文件存在）
+  7. snake_case `kb_id` 字段兼容（模块 3）
+  8. 自动 DELETE 清理测试数据
+- **使用**：
+  ```bash
+  # 服务器一键验证(默认自动清理)
+  bash scripts/verify-skill-e2e.sh
+
+  # 保留产物排查问题
+  KEEP_ARTIFACT=yes bash scripts/verify-skill-e2e.sh
+  # 清理:bash /tmp/km-skill-verify-XXX/cleanup.sh
+
+  # 自定义 KB / Token
+  KB_ID=34754 TOKEN=u-xxx bash scripts/verify-skill-e2e.sh
+  ```
+- **预防**：
+  - 任何 Skill 包结构调整（zip 内容/frontmatter/目录派生）必须先跑本脚本验证
+  - 任何 KB API / Skill API 变更必须先跑本脚本验证兼容性
+  - 服务器端真实环境验证 ≠ 本地 Vitest 单元测试（前者验证端到端链路）
