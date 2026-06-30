@@ -1,7 +1,7 @@
 # KM-Portal AGENTS.md
 
 > 本文件是 KM-Portal 项目的 Agent 工作规范。
-> 最后更新: 2026-06-30 (v1.7.2 验证脚本)
+> 最后更新: 2026-06-30 (v1.7.3 Skill 字段兼容修复)
 
 ## 项目概述
 
@@ -383,8 +383,10 @@ build: 构建相关（如 pkg 打包）
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
-| 1.7.0 | 2026-06-30 | 安全合规 + 可观测性：清理 .env.example 硬编码密钥；translator.ts 类型修复（移除 any）；删除未引用 auth 中间件；apiKeyStore 改为文件持久化 + 文件锁；axios 拦截器按 HTTP 状态码细分提示；新增 Vitest 单元测试 + Playwright E2E + GitHub Actions CI；新增 .editorconfig / LICENSE / 根目录 README.md；RELEASE-NOTES 同步 v1.6 |
+| 1.7.3 | 2026-06-30 | Skill 路由字段兼容：抽 getField 到 src/server/utils/fieldCompat.ts；routes/skill.ts 支持 snake_case (kb_id/kb_name)；新增 skillRouteFieldCompat.test.ts 5 个测试；E2E 验证脚本 (scripts/verify-skill-e2e.sh) 8 步验收 |
+| 1.7.2 | 2026-06-30 | E2E 验证脚本：scripts/verify-skill-e2e.sh 8 步端到端验收（健康/创建/下载/解压/frontmatter/结构/兼容/清理）；发现 v1.7.1 Skill 路由字段兼容遗漏 |
 | 1.7.1 | 2026-06-30 | 系统性修复：抽离 src/shared/types/kb.ts 共享类型；KB API 字段名对齐（camelCase）+ 服务端兼容双字段名；翻译失败返回 warning 字段；启动凭证自检日志；新增 /api/diag/translate-health 健康检查；Skill zip 包结构规范化（YAML frontmatter / safeName 统一 / 跳过空 __init__.py）；新增 3 个 Vitest 回归测试（zip 结构/字段兼容/翻译降级）；CI 加 zip 验证步骤；部署脚本 source .env + post-deploy smoke test；AGENTS.md 老问题清单 |
+| 1.7.0 | 2026-06-30 | 安全合规 + 可观测性：清理 .env.example 硬编码密钥；translator.ts 类型修复（移除 any）；删除未引用 auth 中间件；apiKeyStore 改为文件持久化 + 文件锁；axios 拦截器按 HTTP 状态码细分提示；新增 Vitest 单元测试 + Playwright E2E + GitHub Actions CI；新增 .editorconfig / LICENSE / 根目录 README.md；RELEASE-NOTES 同步 v1.6 |
 | 1.6.0 | 2026-06-29 | 修复 Skill 导出仅生成 .md 问题（改为完整 zip 安装包）；修复 KBBrowser "资源不存在"（新增后端代理路由）；新增 Token 编辑 Modal；新增 axios 统一错误拦截；新增 DataState 组件；新增 KB 内容预览 |
 | 1.5.0 | 2026-06-29 | 修复 Express Router 路由匹配问题，使用 app.use 直接挂载路由 |
 | 1.4.  | 2026-06-29 | 添加 pkg 静态打包支持，解决 GLIBC 兼容性问题 |
@@ -419,6 +421,8 @@ build: 构建相关（如 pkg 打包）
 - [x] 密钥硬编码清理 (2026-06-30, 需用户在平台轮换)
 - [x] v1.7.1 系统性修复 11 项 (字段对齐/翻译降级/zip 规范化/凭证自检)
 - [x] 老问题清单章节（避免重复出现）
+- [x] v1.7.2 E2E 验证脚本 (scripts/verify-skill-e2e.sh, 8 步验收)
+- [x] v1.7.3 Skill 路由字段兼容 (snake_case kb_id/kb_name)
 
 ## 老问题清单（v1.7.1 起维护，避免重复出现）
 
@@ -469,6 +473,20 @@ build: 构建相关（如 pkg 打包）
 - **v1.6.0 解决**（`67efdb6`）：新增后端代理路由 `/api/kb/{tree,info,content,...}`
 - **v1.7.1 强化**：字段兼容双字段名 + 共享类型
 - **预防**：KB API 任何修改必须经过 `kbRouteFieldCompat.test.ts`
+
+### 问题 5：Skill 路由字段不兼容 snake_case（v1.7.1 遗漏，v1.7.3 发现）
+- **症状**：`POST /api/skill/` 用 `kb_id` / `kb_name`（snake_case）调用返回 400
+- **根因**：v1.7.1 字段兼容（`getField`）只在 `routes/kb.ts` 内部实现，**`routes/skill.ts` 没引入**，仍用旧 `const { name, description, kbId, kbName, permission } = req.body` 解构
+- **发现方式**：`scripts/verify-skill-e2e.sh` 端到端验证（Step 7 snake_case 兼容测试）
+- **v1.7.3 解决**：
+  1. 抽 `getField` 到 `src/server/utils/fieldCompat.ts` 公共工具
+  2. `routes/kb.ts` 改用 `import { getField } from '../utils/fieldCompat.js'`，删除本地定义
+  3. `routes/skill.ts:118-150` POST 改用 `getField(req.body, 'kbId', 'kb_id')` / `'kbName', 'kb_name'`
+  4. 新增 `tests/unit/skillRouteFieldCompat.test.ts` 5 个测试（camelCase/snake_case/优先级/缺失/双字段）
+- **预防**：
+  - 任何新 POST 路由**必须**用 `getField` 兼容双字段名
+  - CI 必跑 `kbRouteFieldCompat.test.ts` + `skillRouteFieldCompat.test.ts`
+  - 服务器端真实环境验证 ≠ 本地 Vitest 单元测试（这次漏就是 v1.7.1 漏了 skill 路由字段兼容）
 
 ## 验证脚本（v1.7.2 起新增）
 
