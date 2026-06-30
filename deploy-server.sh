@@ -1,80 +1,65 @@
 #!/bin/bash
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$SCRIPT_DIR"
+PROJECT_DIR="/data/KM-Portal"
+PORT=5053
 
-echo "=== KM-Portal 服务器部署开始 ==="
-echo "时间: $(date '+%Y-%m-%d %H:%M:%S')"
+echo "=== KM-Portal 部署脚本 (v1.7.5) ==="
 
-echo ">>> 清理可能的锁定文件..."
+# 1. Git 安全配置
+git config --global --add safe.directory "$PROJECT_DIR"
+git config --global http.postBuffer 524288000
+
+# 2. 网络预检
+echo "[1/5] 网络预检..."
+if ! curl -fsS --max-time 5 https://github.com > /dev/null 2>&1; then
+  echo "[FAIL] 无法连接 github.com，请检查网络/代理"
+  exit 1
+fi
+echo "✅ 网络可达"
+
+# 3. 同步代码
+cd "$PROJECT_DIR"
 rm -f .git/index.lock FETCH_HEAD
-
-echo ">>> 配置 Git 缓冲区（解决大文件下载问题）..."
-git config --global http.postBuffer 524288000 2>/dev/null || true
-git config --global http.lowSpeedLimit 1000 2>/dev/null || true
-git config --global http.lowSpeedTime 300 2>/dev/null || true
-
-echo ">>> 忽略本地文件权限变更（防止 chmod 后 pull 失败）..."
-git config core.fileMode false
-
-echo ">>> 强制同步远程代码..."
-git fetch origin main
+echo "[2/5] 拉取代码..."
+for i in 1 2 3 4 5; do
+  git fetch origin main && break
+  echo "fetch retry $i failed, sleep 15s..."
+  sleep 15
+done
 git reset --hard origin/main
+echo "✅ 代码同步完成: $(git rev-parse --short HEAD)"
 
-echo ">>> 检查静态可执行文件..."
-if [ ! -f "$SCRIPT_DIR/dist/km-portal-linux" ]; then
-    echo "错误: 找不到 dist/km-portal-linux 文件"
-    echo "请确保已执行 npm run pkg:linux 生成了可执行文件"
-    exit 1
-fi
+# 4. 修权限
+echo "[3/5] 修权限..."
+chmod +x dist/km-portal-linux scripts/verify-skill-e2e.sh scripts/verify-deploy.sh 2>/dev/null || true
+[ -f .env ] && chmod 644 .env
+chown -R "$(whoami):$(whoami)" .git 2>/dev/null || true
+echo "✅ 权限修复完成"
 
-chmod +x "$SCRIPT_DIR/dist/km-portal-linux"
-chmod +x "$SCRIPT_DIR/deploy-server.sh"
-
-echo ">>> 检查服务进程..."
-if pgrep -f "km-portal-linux" > /dev/null; then
-    echo ">>> 发现旧进程，正在重启..."
-    pkill -f "km-portal-linux"
-    sleep 2
-else
-    echo ">>> 无旧进程，直接启动"
-fi
-
-# v1.7.1 加载 .env 注入凭证
-if [ -f "$SCRIPT_DIR/.env" ]; then
-    echo ">>> 加载 .env 注入凭证..."
-    set -a
-    # shellcheck disable=SC1091
-    source "$SCRIPT_DIR/.env"
-    set +a
-else
-    echo ">>> ⚠️  .env 文件不存在，使用环境变量或默认值（翻译功能将不可用）"
-fi
-
-echo ">>> 启动后端服务..."
-PORT="${PORT:-5053}" nohup "$SCRIPT_DIR/dist/km-portal-linux" > server.log 2>&1 &
+# 5. 杀旧进程
+echo "[4/5] 杀旧进程..."
+pkill -9 -f km-portal-linux 2>/dev/null || true
 sleep 3
+if lsof -i:$PORT > /dev/null 2>&1; then
+  echo "[FATAL] 端口 $PORT 仍占用"
+  lsof -i:$PORT
+  exit 1
+fi
+echo "✅ 端口 $PORT 空闲"
 
-if pgrep -f "km-portal-linux" > /dev/null; then
-    echo "=== 部署成功，服务运行中 ==="
-    echo "PID: $(pgrep -f 'km-portal-linux')"
-    echo "健康检查: http://localhost:5053/api/health"
-    echo "翻译健康检查: http://localhost:5053/api/diag/translate-health"
-    echo "日志: $SCRIPT_DIR/server.log"
+# 6. 启动服务
+echo "[5/5] 启动服务..."
+[ -f .env ] && set -a && . ./.env && set +a
+PORT=$PORT nohup ./dist/km-portal-linux > server.log 2>&1 &
+sleep 4
 
-    if curl -s http://localhost:5053/api/health | grep -q "ok"; then
-        echo "✅ 服务健康检查通过"
-    else
-        echo "⚠️ 服务可能未正常启动，请检查日志"
-    fi
-
-    if [ -f "$SCRIPT_DIR/scripts/post-deploy.sh" ]; then
-        echo ">>> 运行部署后 smoke 测试..."
-        bash "$SCRIPT_DIR/scripts/post-deploy.sh" || echo "⚠️ Smoke 测试失败，请手动检查"
-    fi
+# 7. 健康检查
+if curl -fsS http://127.0.0.1:$PORT/api/health > /dev/null 2>&1; then
+  echo "✅ 服务启动成功: http://127.0.0.1:$PORT"
+  echo "=== HEAD: $(git rev-parse --short HEAD) ==="
 else
-    echo "=== 部署失败，请检查日志 ==="
-    echo "tail -50 server.log"
-    exit 1
+  echo "[FAIL] 服务启动失败，请检查 server.log"
+  tail -20 server.log
+  exit 1
 fi
