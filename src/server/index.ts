@@ -34,7 +34,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'KM-Portal',
-    version: '1.9.1',
+    version: '2.0.0',
     timestamp: new Date().toISOString(),
   })
 })

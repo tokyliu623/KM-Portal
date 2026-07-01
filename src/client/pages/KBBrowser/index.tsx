@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Tree, Input, Card, Spin, message, Empty } from 'antd'
 import { PageHeader } from '../../components/PageHeader'
 import { DataState } from '../../components/DataState'
+import { SectionTag, CodeBlock } from '../../components/ai'
 import { kbApi, TreeNode } from '../../services/kb'
 
 const { Search } = Input
@@ -93,7 +94,10 @@ export function KBBrowser() {
 
   return (
     <div>
-      <PageHeader title="知识库浏览器" subTitle="浏览知识库目录和内容" />
+      <PageHeader title="知识库浏览器" subTitle="浏览知识库目录和内容 · AI 化深色主题" />
+      <div style={{ marginBottom: 12 }}>
+        <SectionTag index="01" label="目录浏览" englishLabel="KB Browser" />
+      </div>
       <Card style={{ marginBottom: 16 }}>
         <Search
           placeholder="输入 KB ID"
@@ -128,9 +132,7 @@ export function KBBrowser() {
                 <Spin />
               </div>
             ) : content ? (
-              <div style={{ whiteSpace: 'pre-wrap', maxHeight: 600, overflow: 'auto' }}>
-                {content}
-              </div>
+              <CodeBlock code={content} language={selectedNode?.type || 'doc'} />
             ) : (
               <Empty description="选择节点查看内容" />
             )}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Card, Row, Col, Select, Table, Statistic, Tag, Space, message, Button } from 'antd'
 import { PageHeader } from '../../components/PageHeader'
 import { Loading } from '../../components/Loading'
@@ -6,6 +6,7 @@ import { statsApi, type BySkillStats } from '../../services/stats'
 import { skillApi, type GeneratedSkill } from '../../services/skill'
 import { useNavigate } from 'react-router-dom'
 import { ReloadOutlined, BarChartOutlined } from '@ant-design/icons'
+import * as echarts from 'echarts'
 
 export function Stats() {
   const [skills, setSkills] = useState<GeneratedSkill[]>([])
@@ -183,41 +184,74 @@ interface BarChartCardProps {
 }
 
 function BarChartCard({ title, data, empty }: BarChartCardProps) {
+  const chartRef = useRef<HTMLDivElement>(null)
+  const chartInstance = useRef<echarts.ECharts | null>(null)
+
+  useEffect(() => {
+    if (empty || !chartRef.current) return
+    if (!chartInstance.current) {
+      chartInstance.current = echarts.init(chartRef.current, 'dark')
+    }
+    chartInstance.current.setOption({
+      backgroundColor: 'transparent',
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      grid: { left: 120, right: 60, top: 16, bottom: 16 },
+      xAxis: {
+        type: 'value',
+        axisLine: { lineStyle: { color: 'rgba(59,130,246,0.3)' } },
+        splitLine: { lineStyle: { color: 'rgba(59,130,246,0.1)' } },
+      },
+      yAxis: {
+        type: 'category',
+        data: data.map((d) => d.name),
+        axisLine: { lineStyle: { color: 'rgba(59,130,246,0.3)' } },
+        axisLabel: { color: '#9ca3af', fontSize: 12 },
+      },
+      series: [
+        {
+          type: 'bar',
+          data: data.map((d, i) => ({
+            value: d.value,
+            itemStyle: {
+              color: {
+                type: 'linear',
+                x: 0, y: 0, x2: 1, y2: 0,
+                colorStops: [
+                  { offset: 0, color: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'][i % 5] + '99' },
+                  { offset: 1, color: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'][i % 5] },
+                ],
+              },
+              borderRadius: [0, 4, 4, 0],
+            },
+          })),
+          barWidth: 16,
+          label: { show: true, position: 'right', color: '#e5e7eb', fontSize: 11 },
+        },
+      ],
+    })
+    const onResize = () => chartInstance.current?.resize()
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [data, empty])
+
+  useEffect(() => {
+    return () => {
+      chartInstance.current?.dispose()
+      chartInstance.current = null
+    }
+  }, [])
+
   if (empty) {
     return (
-      <Card title={title}>
-        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>暂无数据</div>
+      <Card title={title} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+        <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>暂无数据</div>
       </Card>
     )
   }
-  const max = Math.max(...data.map((d) => d.value), 1)
-  const palette = ['#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2', '#eb2f96', '#a0d911']
 
   return (
-    <Card title={title}>
-      <div style={{ padding: '8px 0' }}>
-        {data.map((d, i) => (
-          <div key={d.name} style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-            <div style={{ width: 160, color: '#333', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {d.name}
-            </div>
-            <div style={{ flex: 1, background: '#f5f5f5', borderRadius: 4, height: 24, position: 'relative', overflow: 'hidden' }}>
-              <div
-                style={{
-                  width: `${(d.value / max) * 100}%`,
-                  background: palette[i % palette.length],
-                  height: '100%',
-                  borderRadius: 4,
-                  transition: 'width 0.3s',
-                }}
-              />
-            </div>
-            <div style={{ width: 80, textAlign: 'right', fontWeight: 600, color: palette[i % palette.length] }}>
-              {d.value} 次
-            </div>
-          </div>
-        ))}
-      </div>
+    <Card title={title} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+      <div ref={chartRef} style={{ width: '100%', height: Math.max(180, data.length * 32) }} />
     </Card>
   )
 }
