@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Input, Button, Card, message, Select, Form, Space, Radio } from 'antd'
 import { PageHeader } from '../../components/PageHeader'
 import { DataState } from '../../components/DataState'
+import { SectionTag, Highlight, PulseDot } from '../../components/ai'
 import { kbApi, KBDocument } from '../../services/kb'
 import { adminApi, KMToken } from '../../services/admin'
 
@@ -113,7 +114,16 @@ export function DocEditor() {
 
   return (
     <div>
-      <PageHeader title="文档编辑器" subTitle="新建或编辑知识库文档" />
+      <PageHeader title="文档编辑器" subTitle="新建或编辑知识库文档 · AI 助手驱动" />
+      <div style={{ marginBottom: 12 }}>
+        <SectionTag index="01" label="文档编辑" englishLabel="Doc Editor" />
+        <span style={{ marginLeft: 12 }}>
+          <Highlight color="purple">AI 助手</Highlight>
+        </span>
+        <span style={{ marginLeft: 12 }}>
+          <PulseDot color="green" label="在线" />
+        </span>
+      </div>
       <Card style={{ marginBottom: 16 }}>
         <Radio.Group
           value={mode}

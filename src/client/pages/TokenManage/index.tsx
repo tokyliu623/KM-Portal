@@ -1,6 +1,7 @@
 import { Table, Button, Space, Tag, message, Form, Input, Select, Popconfirm, Modal, DatePicker } from 'antd'
 import { PageHeader } from '../../components/PageHeader'
 import { DataState } from '../../components/DataState'
+import { SectionTag, PulseDot, Highlight } from '../../components/ai'
 import { useTokenStore } from '../../stores/useTokenStore'
 import { useEffect, useState } from 'react'
 import { adminApi, KMToken } from '../../services/admin'
@@ -153,7 +154,36 @@ export function TokenManage() {
 
   return (
     <div>
-      <PageHeader title="Token 管理" subTitle="管理知识库访问凭证" />
+      <PageHeader title="Token 管理" subTitle="管理知识库访问凭证 · 凭据健康度实时监控" />
+
+      {/* 凭据健康度仪表 */}
+      <div
+        style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-md)',
+          padding: 16,
+          marginBottom: 16,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 24,
+          flexWrap: 'wrap',
+        }}
+      >
+        <SectionTag index={1} label="凭据健康度" englishLabel="Credential Health" />
+        <Space size="large">
+          <span>
+            <PulseDot color="green" label={`有效 ${tokens.filter(t => t.status === 'active').length}`} />
+          </span>
+          <span>
+            <PulseDot color="red" label={`已撤销 ${tokens.filter(t => t.status === 'revoked').length}`} />
+          </span>
+          <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
+            <Highlight color="blue">总 {tokens.length}</Highlight> 条记录
+          </span>
+        </Space>
+      </div>
+
       <div style={{ marginBottom: 16 }}>
         <Button type="primary" onClick={() => form.submit()}>添加 Token</Button>
       </div>

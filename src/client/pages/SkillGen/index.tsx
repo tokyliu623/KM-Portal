@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Input, Button, message, Form, Select, Space, Table, Modal, Popconfirm } from 'antd'
+import { Input, Button, message, Form, Select, Space, Table, Modal, Popconfirm, Progress } from 'antd'
 import { PageHeader } from '../../components/PageHeader'
 import { DataState } from '../../components/DataState'
+import { PulseDot, Highlight, SkillCard } from '../../components/ai'
 import { skillApi, GeneratedSkill } from '../../services/skill'
 
 const { TextArea } = Input
@@ -133,12 +134,48 @@ export function SkillGen() {
 
   return (
     <div>
-      <PageHeader title="Skill 生成" subTitle="生成知识库运营助手" />
+      <PageHeader title="Skill 生成" subTitle="生成知识库运营助手 · AI 翻译驱动" />
+
+      {generating && (
+        <div
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--accent-purple)',
+            borderRadius: 'var(--radius-md)',
+            padding: 16,
+            marginBottom: 16,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <PulseDot color="purple" label="AI 翻译中" />
+          <Progress percent={99} size="small" showInfo={false} style={{ flex: 1 }} status="active" />
+        </div>
+      )}
+
       <div style={{ marginBottom: 16 }}>
-        <Button type="primary" onClick={() => setModalVisible(true)}>生成新 Skill</Button>
+        <Button type="primary" onClick={() => setModalVisible(true)}>
+          <Highlight color="purple">生成新 Skill</Highlight>
+        </Button>
       </div>
       <DataState loading={loading} empty={skills.length === 0} emptyText="暂无 Skill">
-        <Table columns={columns} dataSource={skills} rowKey="id" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+          {skills.map((s) => (
+            <SkillCard
+              key={s.id}
+              name={s.name}
+              variant="community"
+              description={s.description || `知识库：${s.kbName}`}
+              tag={s.permission === 'write' ? '写权限' : '读权限'}
+            />
+          ))}
+        </div>
+        {/* 保留 Table 模式作为后备展示 */}
+        {skills.length === 0 && null}
+        <div style={{ display: 'none' }}>
+          <Table columns={columns} dataSource={skills} rowKey="id" />
+        </div>
       </DataState>
 
       <Modal

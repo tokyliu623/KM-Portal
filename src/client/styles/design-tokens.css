@@ -1,0 +1,69 @@
+/* KM-Portal v2.0 AI 化设计 Token
+   基于重构方案 2.2 视觉系统 + 参考文件 vapd 演示
+   全站深色单主题（Q3 决策）
+*/
+
+:root {
+  /* 主色板 - 深蓝黑 */
+  --bg-primary: #0a0e1a;
+  --bg-card: #111827;
+  --bg-card-alt: #1a2332;
+  --bg-surface: #0d1117;
+
+  /* 强调色 - 5 色语义系统 */
+  --accent-blue: #3b82f6;
+  --accent-green: #10b981;
+  --accent-orange: #f59e0b;
+  --accent-purple: #8b5cf6;
+  --accent-red: #ef4444;
+
+  /* 文字色 - 3 级 */
+  --text-primary: #e5e7eb;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+
+  /* 边框 - 半透明 */
+  --border: rgba(59, 130, 246, 0.15);
+  --border-hover: rgba(59, 130, 246, 0.3);
+
+  /* 字体 */
+  --font-main: 'PingFang SC', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+
+  /* 圆角 - 略大 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+}
+
+/* 全站深色背景 + 字体 */
+html, body, #root {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  min-height: 100vh;
+}
+
+/* 动画 */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-item { animation: fadeInUp 0.5s ease both; }
+.animate-item:nth-child(1) { animation-delay: 0s; }
+.animate-item:nth-child(2) { animation-delay: 0.1s; }
+.animate-item:nth-child(3) { animation-delay: 0.2s; }
+.animate-item:nth-child(4) { animation-delay: 0.3s; }
+.animate-item:nth-child(5) { animation-delay: 0.4s; }
+.animate-item:nth-child(6) { animation-delay: 0.5s; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.6; transform: scale(1.1); }
+}
+.pulse-dot { animation: pulse 2s ease-in-out infinite; }
+
+@keyframes flow {
+  0%   { stroke-dashoffset: 100; }
+  100% { stroke-dashoffset: 0; }
+}
