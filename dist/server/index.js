@@ -11,6 +11,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/logger.js';
 import { apiKeyAuth } from './middleware/apiKeyAuth.js';
 import { KMApiClient } from './services/kmApiClient.js';
+import { ensureDataFiles } from './services/dataInit.js';
 const __dirname = path.resolve();
 const STATIC_DIR = path.join(__dirname, 'dist/client');
 const INDEX_FILE = path.join(__dirname, 'dist/client/index.html');
@@ -45,9 +46,22 @@ app.get('*', (req, res) => {
     res.sendFile(INDEX_FILE);
 });
 app.use(errorHandler);
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`KM-Portal server running on port ${PORT}`);
     console.log(`Health check: http://localhost:${PORT}/api/health`);
+    // v1.9.1: 启动时初始化 data/ 目录与兜底 JSON
+    try {
+        const initialized = await ensureDataFiles();
+        if (initialized.length > 0) {
+            console.log(`[Boot] Initialized data files: ${initialized.join(', ')}`);
+        }
+        else {
+            console.log('[Boot] Data files already present');
+        }
+    }
+    catch (err) {
+        console.error('[Boot] Failed to ensure data files:', err);
+    }
     // v1.7.1 启动凭证自检
     const llmKeyStatus = process.env.LLM_API_KEY ? 'configured' : 'MISSING';
     const kmKeyStatus = process.env.KM_API_KEY ? 'configured' : 'MISSING';

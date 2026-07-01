@@ -1,4 +1,4 @@
-import { Table, Button, Space, Tag, message, Form, Input, Select, Popconfirm, Modal } from 'antd'
+import { Table, Button, Space, Tag, message, Form, Input, Select, Popconfirm, Modal, DatePicker } from 'antd'
 import { PageHeader } from '../../components/PageHeader'
 import { DataState } from '../../components/DataState'
 import { useTokenStore } from '../../stores/useTokenStore'
@@ -14,7 +14,7 @@ export function TokenManage() {
 
   useEffect(() => {
     loadTokens()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 组件挂载时拉取一次；loadTokens 引用 zustand setLoading 稳定方法
   }, [])
 
   const loadTokens = () => {
@@ -58,7 +58,7 @@ export function TokenManage() {
         token: values.token,
         owner: values.owner,
         permission: values.permission || 'read',
-        expiresAt: values.expiresAt,
+        expiresAt: values.expiresAt ? values.expiresAt.toISOString() : undefined,
       })
       message.success('添加成功')
       form.resetFields()
@@ -186,6 +186,13 @@ export function TokenManage() {
             <Select.Option value="read">查询</Select.Option>
             <Select.Option value="write">编辑</Select.Option>
           </Select>
+        </Form.Item>
+        <Form.Item name="expiresAt" label="过期时间">
+          <DatePicker
+            showTime
+            placeholder="选择过期时间"
+            style={{ width: 240 }}
+          />
         </Form.Item>
       </Form>
       <DataState loading={loading} empty={tokens.length === 0} emptyText="暂无 Token">

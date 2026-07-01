@@ -55,7 +55,7 @@ export const kbApi = {
   getTree: (kbId: string, parentId?: number) =>
     api.post<ApiResponse<TreeNode[]>>('/kb/tree', { kbId, parentId }),
 
-  getContent: (kbId: string, contentIds: number[], contentType: string) =>
+  getContent: (kbId: string, contentIds: number[], contentType: 'doc' | 'folder' = 'doc') =>
     api.post<ApiResponse<{ type: string; content: ContentBody[] }>>('/kb/content', {
       kbId,
       contentIds,

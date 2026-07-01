@@ -28,7 +28,7 @@ export function AnalyzeStage() {
 
   useEffect(() => {
     fetchStats()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchStats 闭包依赖 credential，credential.kbId 变化时触发
   }, [credential?.kbId])
 
   const fetchStats = async () => {

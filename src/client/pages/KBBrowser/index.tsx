@@ -62,13 +62,13 @@ export function KBBrowser() {
     setSelectedNode({
       id: node.id,
       title: node.title,
-      type: 'doc',
+      type: node.hasChild ? 'kb' : 'doc',
       kbId: selectedKbId,
     })
 
     setContentLoading(true)
     try {
-      const res = await kbApi.getContent(selectedKbId, [node.id], 'doc')
+      const res = await kbApi.getContent(selectedKbId, [node.id], selectedNode?.type || 'doc')
       if (res.success && res.data?.content && res.data.content.length > 0) {
         setContent(res.data.content[0].content || '')
       } else {

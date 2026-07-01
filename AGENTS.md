@@ -383,6 +383,7 @@ build: 构建相关（如 pkg 打包）
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| 1.9.2 | 2026-07-01 | 功能修复 11 项 + 13 测试套件：F1 Dashboard setStats 串行赋值 + F4 TokenManage DatePicker(expiresAt ISO) + F5 KBBrowser type 按 hasChild 推断 + F6 getContent 第三参数 doc/folder 联合类型 + F7 DocEditor 双模式(create/edit) + F8 KB 下拉(from tokens) + F9 SkillGen catch 区分校验错误 + F12 ApiDocs items API + F13 KMStudio polling 依赖收紧 + F14 4 处 eslint-disable 补注释；新增 tests/unit/pagesV192.test.ts 31 测试；.eslintrc.cjs 加 tests/**/* overrides 允许 mock any；189/189 测试通过（158 旧 + 31 新） |
 | 1.9.1 | 2026-06-30 | 修复 statsStore 并发锁漏洞：withLock 由 Set 自旋锁（race condition）改为 Promise 链式串行化（FIFO 严格）；同步更新 package.json version 1.7.1→1.9.1 + index.ts 1.9.0→1.9.1；新增 src/server/services/dataInit.ts + 5 个测试（dataInit.test.ts）实现服务器启动 data/ 目录与 5 个 JSON 兜底（tokens/skills/api-keys/api-logs/operation-stats），幂等不覆盖现有文件；.gitignore 新增 `data/*.json` 排除 + data/.gitkeep 占位，移除 data/skills.json 等从 git 索引（修复真实 API Key 泄露风险）；AGENTS.md 老问题清单新增问题 7；158/158 测试通过 |
 | 1.9.0 | 2026-06-30 | v1.9.0 完整功能：src/server/services/apiKeyStore.ts 新增 createForSkill + skillId 绑定；skillPackage.ts 在 zip 中嵌入 API Key（SKILL_KEY.txt）；statsService.ts 新增 getStatsBySkill；routes/skill.ts POST 自动生成 API Key + export 嵌入；routes/stats.ts 新增 /by-skill 路由 + ApiLog 字段；index.ts /api/kb 加 apiKeyAuth 中间件；middleware/logger.ts 记录 apiKeyId/skillId；types/index.ts ApiCallRecord 加 apiKeyId/skillId；4 个新测试（statsConcurrency/statsStoreV190/statsService/apiKeyStoreV190）共 153/153 通过 |
 | 1.8.3 | 2026-06-30 | 运营效果分析：src/server/services/operationStatsService.ts (4 方法：getApiLogStats/getManualKpis/saveManualKpi/generateTrendData/calculateHealthScore) + data/operation-stats.json (KB 维度 KPI 存储) + stats.ts 增 3 端点 (GET /operation/:kbId, POST /operation/:kbId, GET /health/:kbId) + tests/unit/operationStatsService.test.ts (10 测试 4 维度)；TDD 流程：RED 10/10 fail → GREEN 10/10 pass；ESLint + tsc + esbuild EXIT 0 |
@@ -437,6 +438,7 @@ build: 构建相关（如 pkg 打包）
 - [ ] v1.8.4 OpenAPI 规范生成 (T+18d)
 - [x] v1.9.0 前端向导完善 + 端到端联调 (T+25d)
 - [x] v1.9.1 statsStore 并发锁漏洞修复 (Promise 链式串行化 FIFO, 2026-06-30)
+- [x] v1.9.2 14 个 bug 修复 + 13 测试套件 (F1/F4/F5/F6/F7/F8/F9/F12/F13/F14, 跳过 F3/F10/F11 已实现, 2026-07-01)
 
 ## 老问题清单（v1.7.1 起维护，避免重复出现）
 
