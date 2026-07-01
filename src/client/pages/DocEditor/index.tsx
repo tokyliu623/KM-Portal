@@ -1,52 +1,176 @@
-import { useState } from 'react'
-import { Input, Button, Card, message, Select, Form } from 'antd'
+import { useEffect, useState } from 'react'
+import { Input, Button, Card, message, Select, Form, Space, Radio } from 'antd'
 import { PageHeader } from '../../components/PageHeader'
-import { kbApi } from '../../services/kb'
+import { DataState } from '../../components/DataState'
+import { kbApi, KBDocument } from '../../services/kb'
+import { adminApi, KMToken } from '../../services/admin'
 
 const { TextArea } = Input
 
+type Mode = 'create' | 'edit'
+
 export function DocEditor() {
-  const [kbId, setKbId] = useState('')
+  const [mode, setMode] = useState<Mode>('create')
+  const [tokens, setTokens] = useState<KMToken[]>([])
+  const [kbId, setKbId] = useState<string>('')
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [contentType, setContentType] = useState('markdown')
+  const [parentId, setParentId] = useState<number | undefined>(undefined)
   const [loading, setLoading] = useState(false)
+  const [docs, setDocs] = useState<KBDocument[]>([])
+  const [selectedDocId, setSelectedDocId] = useState<string | undefined>(undefined)
+  const [editingDoc, setEditingDoc] = useState<KBDocument | null>(null)
+  const [docsLoading, setDocsLoading] = useState(false)
+
+  useEffect(() => {
+    adminApi.listTokens().then((res) => {
+      if (res.success && res.data) setTokens(res.data)
+    })
+  }, [])
+
+  useEffect(() => {
+    if (mode !== 'edit' || !kbId) {
+      setDocs([])
+      setSelectedDocId(undefined)
+      setEditingDoc(null)
+      return
+    }
+    setDocsLoading(true)
+    kbApi.listDocuments(kbId)
+      .then((res) => {
+        if (res.success && res.data) setDocs(res.data.documents || [])
+      })
+      .catch(() => setDocs([]))
+      .finally(() => setDocsLoading(false))
+  }, [mode, kbId])
+
+  const handleSelectDoc = (docId: string) => {
+    setSelectedDocId(docId)
+    const doc = docs.find((d) => d.id === docId) || null
+    setEditingDoc(doc)
+    if (doc) {
+      setTitle(doc.title)
+      setContent(doc.content)
+    }
+  }
+
+  const resetForm = () => {
+    setTitle('')
+    setContent('')
+    setSelectedDocId(undefined)
+    setEditingDoc(null)
+    setParentId(undefined)
+  }
 
   const handlePublish = async () => {
-    if (!kbId || !title || !content) {
+    if (!kbId) {
+      message.warning('请选择知识库')
+      return
+    }
+    if (!title || !content) {
       message.warning('请填写完整信息')
       return
     }
     setLoading(true)
     try {
-      const res = await kbApi.createContent(kbId, title, contentType, content)
-      if (res.success) {
-        message.success('发布成功')
-        setTitle('')
-        setContent('')
+      if (mode === 'create') {
+        const res = await kbApi.createContent(kbId, title, contentType, content, parentId)
+        if (res.success) {
+          message.success('发布成功')
+          resetForm()
+        } else {
+          message.error(res.msg || '发布失败')
+        }
       } else {
-        message.error(res.msg || '发布失败')
+        if (!editingDoc) {
+          message.warning('请先选择要编辑的文档')
+          setLoading(false)
+          return
+        }
+        const res = await kbApi.updateContent(kbId, Number(editingDoc.id), title, contentType, content)
+        if (res.success) {
+          message.success('更新成功')
+          if (kbId) {
+            const refreshed = await kbApi.listDocuments(kbId)
+            if (refreshed.success && refreshed.data) setDocs(refreshed.data.documents || [])
+          }
+        } else {
+          message.error(res.msg || '更新失败')
+        }
       }
     } catch (err) {
-      message.error((err as Error).message || '发布失败')
+      message.error((err as Error).message || (mode === 'create' ? '发布失败' : '更新失败'))
     } finally {
       setLoading(false)
     }
   }
 
+  const kbOptions = tokens.map((t) => ({
+    label: `${t.kb_name} (KB ${t.kb_id})`,
+    value: String(t.kb_id),
+  }))
+
   return (
     <div>
-      <PageHeader title="文档编辑器" subTitle="编辑和发布文档" />
-      <Card>
+      <PageHeader title="文档编辑器" subTitle="新建或编辑知识库文档" />
+      <Card style={{ marginBottom: 16 }}>
+        <Radio.Group
+          value={mode}
+          onChange={(e) => {
+            setMode(e.target.value)
+            resetForm()
+          }}
+          style={{ marginBottom: 16 }}
+        >
+          <Radio.Button value="create">新建文档</Radio.Button>
+          <Radio.Button value="edit">编辑已有文档</Radio.Button>
+        </Radio.Group>
+
         <Form layout="vertical">
-          <Form.Item label="知识库 ID" required>
-            <Input
-              placeholder="输入 KB ID"
-              value={kbId}
-              onChange={(e) => setKbId(e.target.value)}
-              style={{ maxWidth: 300 }}
+          <Form.Item label="知识库" required>
+            <Select
+              placeholder="选择知识库（来自您有写权限的 Token）"
+              value={kbId || undefined}
+              onChange={(v) => {
+                setKbId(v)
+                resetForm()
+              }}
+              options={kbOptions}
+              showSearch
+              optionFilterProp="label"
+              style={{ maxWidth: 400 }}
             />
           </Form.Item>
+
+          {mode === 'edit' && (
+            <Form.Item label="选择文档" required>
+              <DataState loading={docsLoading} empty={!docsLoading && docs.length === 0} emptyText="该知识库暂无文档">
+                <Select
+                  placeholder="选择要编辑的文档"
+                  value={selectedDocId}
+                  onChange={handleSelectDoc}
+                  options={docs.map((d) => ({ label: d.title, value: d.id }))}
+                  showSearch
+                  optionFilterProp="label"
+                  style={{ maxWidth: 400 }}
+                />
+              </DataState>
+            </Form.Item>
+          )}
+
+          {mode === 'create' && (
+            <Form.Item label="父文档 ID（可选）">
+              <Input
+                type="number"
+                placeholder="留空表示根目录"
+                value={parentId ?? ''}
+                onChange={(e) => setParentId(e.target.value ? Number(e.target.value) : undefined)}
+                style={{ maxWidth: 300 }}
+              />
+            </Form.Item>
+          )}
+
           <Form.Item label="文档标题" required>
             <Input
               placeholder="输入文档标题"
@@ -73,9 +197,12 @@ export function DocEditor() {
               onChange={(e) => setContent(e.target.value)}
             />
           </Form.Item>
-          <Button type="primary" onClick={handlePublish} loading={loading}>
-            发布文档
-          </Button>
+          <Space>
+            <Button type="primary" onClick={handlePublish} loading={loading}>
+              {mode === 'create' ? '发布文档' : '保存修改'}
+            </Button>
+            <Button onClick={resetForm}>重置</Button>
+          </Space>
         </Form>
       </Card>
     </div>

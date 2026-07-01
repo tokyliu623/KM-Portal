@@ -54,9 +54,13 @@ export function SkillGen() {
         setModalVisible(false)
         form.resetFields()
         loadSkills()
+      } else {
+        message.error(res.error || res.message || '生成失败')
       }
     } catch (err) {
-      message.error((err as Error).message || '生成失败')
+      if (err instanceof Error && !err.message.includes('rules')) {
+        message.error(err.message || '生成失败')
+      }
     } finally {
       if (translateHide) translateHide()
       setGenerating(false)

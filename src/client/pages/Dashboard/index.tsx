@@ -20,18 +20,18 @@ export function Dashboard() {
           statsApi.getDaily(7),
           statsApi.getDaily(30),
         ])
+        let l7 = last7Days
+        let l30 = last30Days
         if (overviewRes.success && overviewRes.data) {
-          setStats(
-            { total: overviewRes.data.totalCalls, avgLatency: 0 },
-            { total: overviewRes.data.totalCalls, avgLatency: 0 }
-          )
+          l7 = { total: overviewRes.data.totalCalls, avgLatency: 0 }
         }
         if (daily7Res.success && daily7Res.data) {
-          setStats(daily7Res.data, last30Days)
+          l7 = daily7Res.data
         }
         if (daily30Res.success && daily30Res.data) {
-          setStats(last7Days, daily30Res.data)
+          l30 = daily30Res.data
         }
+        setStats(l7, l30)
       } catch (err: unknown) {
         message.error(`加载失败: ${err instanceof Error ? err.message : '未知错误'}`)
       } finally {
@@ -39,7 +39,7 @@ export function Dashboard() {
       }
     }
     fetchData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setStats/setLoading 为 zustand 稳定引用；overview/daily 7/30 不应在重渲染时重复触发
   }, [])
 
   if (loading) return <Loading />

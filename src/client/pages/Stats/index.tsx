@@ -35,7 +35,7 @@ export function Stats() {
 
   useEffect(() => {
     loadStats()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadStats 闭包依赖 skillName/kbId/days 已在依赖列表
   }, [skillName, kbId, days])
 
   const kbIdOptions = Array.from(new Set(skills.map((s) => s.kbId))).map((id) => ({

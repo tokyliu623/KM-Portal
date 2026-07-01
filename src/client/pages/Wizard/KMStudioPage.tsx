@@ -138,7 +138,8 @@ function KMStudioPage() {
       }
     }, 1500)
     return () => clearInterval(timer)
-  }, [polling, message])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- message 是 App.useApp() 稳定引用；jobId 通过 getState() 始终读最新值
+  }, [polling])
 
   const handleInit = async (cred: { kbId: string; kbName: string; token: string }) => {
     try {
